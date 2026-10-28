@@ -20,7 +20,7 @@ services:
 
   app:
     build: ./app
-    image: bluewater-port-app:3.3.0
+    image: bluewater-port-app:3.4.0
     pull_policy: build          # rebuild the app image on every `docker compose up`, so code changes always land
     restart: unless-stopped
     depends_on:

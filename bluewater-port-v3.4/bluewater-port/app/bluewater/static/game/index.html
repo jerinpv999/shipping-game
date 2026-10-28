@@ -85,6 +85,9 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 .ops{position:absolute;left:50%;transform:translateX(-50%);top:calc(56px + env(safe-area-inset-top,0px));padding:8px 14px;width:min(380px,calc(100% - 24px));box-sizing:border-box;display:flex;flex-direction:column;gap:5px}
 .ops .t{display:flex;justify-content:space-between;gap:10px;font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.05em;text-transform:uppercase}
 .ops .bar{height:6px}
+.cockpitfx{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 75% 70% at 50% 42%,transparent 62%,rgba(6,12,18,.55) 100%)}
+.helm .cams{gap:8px;flex-wrap:wrap}
+.helm .cams .seg button{padding:3px 8px;font-size:12px}
 .toast{position:absolute;left:50%;top:38%;transform:translateX(-50%);font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.04em;text-transform:uppercase;color:var(--hivis);text-shadow:0 2px 10px rgba(0,0,0,.7);white-space:nowrap}
 .tabs{display:flex;gap:2px;border-bottom:1px solid var(--edge);margin:-2px 0 0}
 .tabs button{all:unset;cursor:pointer;padding:5px 8px;font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -234,6 +237,7 @@ const BOOK_THRESHOLD = 30, BOOK_MAX_AGE = 150, BOOK_MIN = 6;   // a port books a
 const SR_STAGES = [["atFactory", "At factory"], ["roadOut", "Road to port"], ["yardOut", "Export yard"], ["onShip", "At sea"], ["yardIn", "Import yard"], ["roadIn", "Road to consignee"], ["delivered", "Delivered"]];
 const TELE = [-0.25, 0, 0.35, 0.65, 1];
 const TELE_NAMES = ["Astern", "Stop", "Slow", "Half", "Full"];
+const VIEW_LABELS = [["ship", "Chase"], ["bridge", "Bridge"], ["bow", "Bow"], ["top", "Top"], ["orbit", "Orbit"], ["island", "Island"]];
 const KN = 0.6;            // units/s -> knots
 const NM = 463;            // units per nautical mile
 const BOX_COLORS = [0xc0392b, 0x2e86de, 0x27ae60, 0xe67e22, 0x8e44ad, 0x16a085, 0xd35400, 0x7f8c8d, 0xf1c40f, 0x1f4e79];
@@ -1192,6 +1196,48 @@ function makeWarship(){
   addWalker(body, new THREE.Vector3(-B / 2 + 1.2, deckY + 0.3, 24), new THREE.Vector3(-B / 2 + 1.2, deckY + 0.3, -18), { speed: 1, vest: 0x1f3a5c, helmet: 0x1f3a5c });
   addWalker(body, new THREE.Vector3(-3, deckY + 0.8, 28), new THREE.Vector3(3, deckY + 0.8, 28), { speed: 0.6, pause: 4, vest: 0xf4d03f, helmet: 0xf4d03f });
   return { root, body, type: "navy", L, B, deckY, manifolds: [], radar, vls: new THREE.Vector3(0, deckY + 1, -15) };
+}
+
+// The wheelhouse seen from the captain's chair: window frame, console, radar, chart screen, wheel and telegraph.
+// Built in eye space (forward = -z) and parented to the ship body at the helm position, so it rolls with the ship.
+function makeCockpit(type){
+  // laid out in eye space so the frame and console sit in the strips of screen the HUD leaves free
+  const g = new THREE.Group();
+  const mats = [];
+  const B = (c, glow) => { const m = new THREE.MeshBasicMaterial({ color: c, fog: false }); m.userData.base = new THREE.Color(c); if (!glow) mats.push(m); return m; };
+  const frame = B(0x1b2228), desk = B(0x2c353d), trim = B(0x46525d), open = type === "pirate";
+  const box = (w, hh, d, x, y, z, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, hh, d), mat); m.position.set(x, y, z); g.add(m); return m; };
+  if (!open){
+    box(4.2, 0.36, 0.12, 0, 0.8, -2, frame);                         // header above the windows
+    [-0.82, 0.82].forEach(x => box(0.06, 1.3, 0.06, x, 0.15, -2, frame));   // window mullions
+    [-1.5, 1.5].forEach(x => box(0.14, 1.6, 0.14, x, 0.1, -1.95, frame));   // corner posts
+  }
+  const w = open ? 1.2 : 3.4;
+  box(w, 0.6, 0.45, 0, -0.73, -1.8, desk);                              // console
+  const top = box(w, 0.04, 0.5, 0, -0.42, -1.72, trim); top.rotation.x = 0.3;
+  const flat = (geo, col, x) => { const m = new THREE.Mesh(geo, B(col)); m.position.set(x, -0.395, -1.72); m.rotation.x = -Math.PI / 2 + 0.3; g.add(m); return m; };
+  let sweep = null;
+  if (!open){
+    const radar = flat(new THREE.CircleGeometry(0.13, 24), 0x07301a, -0.66);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.122, 0.135, 24), B(0x2fd27a, true)); ring.position.z = 0.002; radar.add(ring);
+    sweep = new THREE.Group(); sweep.position.z = 0.003; radar.add(sweep);
+    const beam = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.008), B(0x5dff9e, true)); beam.position.x = 0.06; sweep.add(beam);
+    const chart = flat(new THREE.PlaneGeometry(0.34, 0.2), 0x13406a, 0.66);
+    const track = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.008), B(0xf4c430, true)); track.position.z = 0.002; track.rotation.z = 0.5; chart.add(track);
+  } else flat(new THREE.PlaneGeometry(0.24, 0.14), 0x13406a, 0.3);
+  // the wheel turns with the rudder; the telegraph lever follows the engine order
+  const wheel = new THREE.Group(); wheel.position.set(0, -0.56, -1.5); wheel.rotation.x = -0.35; g.add(wheel);
+  const wm = B(0x6e4a2c);
+  wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.018, 6, 22), wm));
+  for (let i = 0; i < 4; i++){ const sp = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.018, 0.018), wm); sp.rotation.z = i * Math.PI / 4; wheel.add(sp); }
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.05, 8), B(0xc9a227)); hub.rotation.x = Math.PI / 2; wheel.add(hub);
+  const lever = new THREE.Group(); lever.position.set(open ? -0.36 : 0.36, -0.44, -1.62); g.add(lever);
+  const stick = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.2, 0.025), B(0x9aa3ab)); stick.position.y = 0.1; lever.add(stick);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 6), B(0xc0392b)); knob.position.y = 0.21; lever.add(knob);
+  g.visible = false; g.userData.offset = new THREE.Vector3(0, -0.07, 0);
+  // fittings dim with the daylight; screens stay lit
+  const shade = k => mats.forEach(m => m.color.copy(m.userData.base).multiplyScalar(k));
+  return { g, wheel, lever, sweep, shade };
 }
 
 function makePirateModel(){
@@ -2754,6 +2800,7 @@ function createGame(container, onHud){
       if (k === "e") action();
       if (k === "t") toggleAuto();
       if (k === "v") toggleView();
+      if (k === "c") setView(cam.mode === "bridge" ? "ship" : "bridge");
       if (k === "n") toggleCycle();
       if (k === "b") takeFirstBooking();
       if (k === "f") fireSelected();
@@ -2811,10 +2858,24 @@ function createGame(container, onHud){
   }
 
   // camera
-  const cam = { yaw: 0.5, pitch: 0.36, dist: 190, lastDrag: -10, pos: new THREE.Vector3(-800, 200, 400), mode: "ship", look: new THREE.Vector3() };
-  function toggleView(){
-    cam.mode = cam.mode === "ship" ? "island" : "ship";
-    say(cam.mode === "island" ? "Island view · roads, rail & factories" : "Ship view");
+  const cam = { yaw: 0.5, pitch: 0.36, dist: 190, lastDrag: -10, pos: new THREE.Vector3(-800, 200, 400), mode: "ship", look: new THREE.Vector3(), switchT: -10, fov: 50, near: 1, hidden: null };
+  const VIEWS = ["ship", "bridge", "bow", "top", "orbit", "island"];
+  const VIEW_SAY = { ship: "Chase camera", bridge: "Captain's view from the bridge · drag to look around, scroll for binoculars", bow: "Bow lookout · drag to look around",
+                     top: "Top-down chart view", orbit: "Orbit camera", island: "Island view · roads, rail & factories" };
+  function setView(m){
+    if (!VIEWS.includes(m) || m === cam.mode) return;
+    cam.mode = m; cam.switchT = realT; cam.yaw = 0.5; cam.pitch = 0.36; cam.lastDrag = -10;
+    if (m === "bridge" || m === "bow") cam.fpZoom = 1;
+    say(VIEW_SAY[m]);
+  }
+  function toggleView(){ setView(VIEWS[(VIEWS.indexOf(cam.mode) + 1) % VIEWS.length]); }
+  // where the helmsman's eyes are, in ship-body coordinates (forward is -z)
+  function eyeFor(sh, mode){
+    const T = sh.T, deckY = sh.type === "navy" ? 4 : sh.type === "pirate" ? 0 : 5;
+    if (mode === "bow") return sh.type === "pirate" ? new THREE.Vector3(0, 4.2, -5.5) : new THREE.Vector3(0, deckY + 6.2, -T.L / 2 + 13);
+    if (sh.type === "pirate") return new THREE.Vector3(0, 4.7, 3.6);
+    if (sh.type === "navy") return new THREE.Vector3(0, deckY + 8.4, -5.6);
+    return new THREE.Vector3(0, deckY + 14.8, T.L / 2 - 12.7);
   }
   const el = renderer.domElement; let drag = null;
   el.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY, id: e.pointerId }; try { el.setPointerCapture(e.pointerId); } catch (_) {} });
@@ -2825,7 +2886,11 @@ function createGame(container, onHud){
   });
   const endDrag = () => { drag = null; };
   el.addEventListener("pointerup", endDrag); el.addEventListener("pointercancel", endDrag);
-  el.addEventListener("wheel", e => { e.preventDefault(); cam.dist = clamp(cam.dist * (1 + e.deltaY * 0.001), 60, 900); }, { passive: false });
+  el.addEventListener("wheel", e => {
+    e.preventDefault();
+    if (cam.mode === "bridge" || cam.mode === "bow") cam.fpZoom = clamp((cam.fpZoom || 1) * (1 - e.deltaY * 0.001), 1, 4);   // binoculars
+    else cam.dist = clamp(cam.dist * (1 + e.deltaY * 0.001), 60, 900);
+  }, { passive: false });
   function onResize(){ const w = container.clientWidth, hh = container.clientHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); }
   window.addEventListener("resize", onResize);
 
@@ -2965,9 +3030,43 @@ function createGame(container, onHud){
 
     updateOcean(camera.position.x, camera.position.z, t);
 
-    if (realT - cam.lastDrag > 4) cam.yaw = lerp(cam.yaw, 0.5, Math.min(1, rdt*0.3));
-    let want, lookAt;
-    if (cam.mode === "island"){
+    if (realT - cam.lastDrag > 4){ cam.yaw = lerp(cam.yaw, 0.5, Math.min(1, rdt*0.3)); if (cam.mode === "bridge" || cam.mode === "bow") cam.pitch = lerp(cam.pitch, 0.36, Math.min(1, rdt*0.3)); }
+    let want, lookAt, snap = false, fov = 50, near = 1;
+    const fp = (cam.mode === "bridge" || cam.mode === "bow") && s.state !== "lost" && s.state !== "sinking";
+    camera.up.set(0, 1, 0);
+    // the cockpit is only drawn for the selected ship in bridge view; the ship's own name tag is hidden from inside
+    ships.forEach(o => { if (o.cockpit) o.cockpit.g.visible = fp && cam.mode === "bridge" && o === s; });
+    if (cam.hidden && (cam.hidden !== s || !fp)){ cam.hidden.model.root.children.forEach(c => { if (c.isSprite) c.visible = true; }); cam.hidden = null; }
+    if (fp && cam.hidden !== s){ s.model.root.children.forEach(c => { if (c.isSprite) c.visible = false; }); cam.hidden = s; }
+    if (fp){
+      if (cam.mode === "bridge" && !s.cockpit){ s.cockpit = makeCockpit(s.type); s.model.body.add(s.cockpit.g); }
+      const E = eyeFor(s, cam.mode);
+      if (s.cockpit){
+        s.cockpit.g.position.copy(eyeFor(s, "bridge")).add(s.cockpit.g.userData.offset);
+        s.cockpit.wheel.rotation.z = lerp(s.cockpit.wheel.rotation.z, -s.rudder * 2.4, Math.min(1, rdt * 4));
+        s.cockpit.lever.rotation.x = lerp(s.cockpit.lever.rotation.x, -(s.tele - 1) * 0.35, Math.min(1, rdt * 5));
+        if (s.cockpit.sweep) s.cockpit.sweep.rotation.z -= rdt * 2.2;
+        s.cockpit.shade(0.32 + 0.68 * dayState.dayness);
+      }
+      s.model.root.updateMatrixWorld(true);
+      const yaw = (cam.yaw - 0.5) * 2.2, pit = (cam.pitch - 0.36) * 1.1;
+      const dl = new THREE.Vector3(-Math.sin(yaw), (cam.mode === "bow" ? -0.11 : -0.06) - pit, -Math.cos(yaw)).normalize().multiplyScalar(120);
+      want = s.model.body.localToWorld(E.clone());
+      lookAt = s.model.body.localToWorld(E.clone().add(dl));
+      const q = new THREE.Quaternion(); s.model.body.getWorldQuaternion(q);
+      camera.up.set(0, 1, 0).applyQuaternion(q);      // the horizon tilts as she rolls
+      snap = realT - cam.switchT > 0.6;
+      fov = 50 / (cam.fpZoom || 1); near = 0.15;
+    } else if (cam.mode === "top"){
+      const f = fwd(s.hd), hgt = cam.dist * 2.2 + 90;
+      want = new THREE.Vector3(s.x - f.x * 0.5, hgt, s.z - f.z * 0.5);
+      lookAt = new THREE.Vector3(s.x, 0, s.z);
+      camera.up.set(f.x, 0, f.z);                     // heading up, like a radar plot
+    } else if (cam.mode === "orbit"){
+      const a = realT * 0.12 + (cam.yaw - 0.5) * 3, r = cam.dist * 0.95;
+      want = new THREE.Vector3(s.x + Math.sin(a) * r, s.y + 18 + r * 0.22 + (cam.pitch - 0.36) * r * 0.6, s.z + Math.cos(a) * r);
+      lookAt = new THREE.Vector3(s.x, s.y + 10, s.z);
+    } else if (cam.mode === "island"){
       let hub = null, bd = Infinity;
       ports.forEach(P => { if (!P.cranes) return; const dd = Math.hypot(P.port.x - s.x, P.port.z - s.z); if (dd < bd){ bd = dd; hub = P; } });
       const c = hub.port, ang = Math.atan2(hub.out.x, hub.out.z) + cam.yaw - 0.5 + 0.6;
@@ -2979,9 +3078,11 @@ function createGame(container, onHud){
       want = new THREE.Vector3(s.x + back.x*cam.dist*Math.cos(cam.pitch), s.y + 10 + cam.dist*Math.sin(cam.pitch), s.z + back.z*cam.dist*Math.cos(cam.pitch));
       lookAt = new THREE.Vector3(s.x, s.y + 12, s.z);
     }
-    if (want.y < 6) want.y = 6;
-    cam.pos.lerp(want, Math.min(1, rdt * 2.2));
-    cam.look.lerp(lookAt, Math.min(1, rdt * 3));
+    if (!fp && want.y < 6) want.y = 6;
+    if (snap){ cam.pos.copy(want); cam.look.copy(lookAt); }
+    else if (fp){ cam.pos.lerp(want, Math.min(1, rdt * 7)); cam.look.lerp(lookAt, Math.min(1, rdt * 7)); }
+    else { cam.pos.lerp(want, Math.min(1, rdt * 2.2)); cam.look.lerp(lookAt, Math.min(1, rdt * 3)); }
+    if (Math.abs(camera.fov - fov) > 0.05 || camera.near !== near){ camera.fov = lerp(camera.fov, fov, Math.min(1, rdt * 6)); camera.near = near; camera.updateProjectionMatrix(); }
     camera.position.copy(cam.pos);
     camera.lookAt(cam.look);
     sky.position.copy(camera.position); stars.position.copy(camera.position); clouds.position.set(camera.position.x, 0, camera.position.z);
@@ -3146,7 +3247,7 @@ function createGame(container, onHud){
 
   frame();
   return {
-    select, toggleAuto, action, toggleView, toggleCycle, acceptBooking, view: () => cam.mode,
+    select, toggleAuto, action, toggleView, setView, toggleCycle, acceptBooking, view: () => cam.mode,
     fire: () => fireSelected(), takeBooking: () => takeFirstBooking(), acceptJob,
     login(u, p){ return api("/api/game/login", { username: u, password: p }).then(({ ok, j }) => { if (ok) location.reload(); return ok ? null : (j.detail || "Sign-in failed"); }); },
     logout(){ api("/api/game/logout", {}).then(() => location.reload()); },
@@ -3413,6 +3514,7 @@ function App(){
         h("button", { className: "btn tiny", onClick: () => g.logout() }, "Sign out")) : null,
       d.account.status === "user" && !d.account.owned && d.account.note ? h("div", { className: "prompt panel", style: { bottom: "auto", top: "calc(100px + env(safe-area-inset-top,0px))" } }, d.account.note) : null,
       d.account.status === "none" ? h(LoginOverlay, { g }) : null,
+      d.view === "bridge" ? h("div", { className: "cockpitfx", "aria-hidden": true }) : null,
       d.alert ? h("div", { className: "alert panel", role: "alert" }, "Pirates attacking ", h("b", null, d.alert.ship), " · hull " + d.alert.hp + "%",
         h("button", { className: "btn tiny", onClick: () => { const nv = d.ships.find(x => x.type === "navy" && (x.id === "sentinel" ? -1 : 1) === d.alert.side); if (nv) g.select(nv.i); } }, "Take the frigate")) : null,
       h("div", { className: "toggles" },
@@ -3437,13 +3539,15 @@ function App(){
           s.hp < 100 ? h("span", { className: "pill", style: { color: s.hp < 35 ? "var(--danger)" : "var(--hivis)" } }, "Hull " + Math.round(s.hp) + "%") : null,
           h("div", { style: { flex: 1 } }),
           s.type === "navy" ? h("button", { className: "btn fire", onClick: () => g.fire(), disabled: s.cooldown > 0 }, s.cooldown > 0 ? "Reload " + s.cooldown.toFixed(0) + "s" : "Fire missile") : null,
-          h("button", { className: "btn" + (d.view === "island" ? " on" : ""), onClick: () => g.toggleView(), "aria-pressed": d.view === "island" }, "Island view"),
           h("button", { className: "btn" + (s.auto ? " on" : ""), onClick: () => g.toggleAuto(), "aria-pressed": s.auto }, s.auto ? "Autopilot on" : "Autopilot off")),
         h("div", { className: "line" },
           h("div", { className: "stat" }, h("b", null, (s.astern ? "−" : "") + s.knots.toFixed(1)), h("span", null, "knots")),
           h("div", { className: "stat" }, h("b", null, String(Math.round(s.heading) % 360).padStart(3, "0") + "°"), h("span", null, "heading")),
           h("div", { className: "tele", "aria-label": "Engine telegraph" }, TELE_NAMES.map((n, i) => h("span", { key: n, className: i === teleIdx ? "on" : "" }, n)))),
-        !touch ? h("div", { className: "hint" }, d.sel.type === "pirate" && d.sel.owned ? "W/S telegraph · A/D rudder · E raid / break off · E canal · T autopilot · V island view · N time of day · 1–9 ships" : d.sel.type === "navy" && d.sel.owned ? "W/S telegraph · A/D rudder · E escort / stand down · F fire missile · T autopilot · V island view · 1–9 ships" : "W/S telegraph · A/D rudder · E berth / canal / cast off · B take booking · F fire (frigate) · T autopilot · V island view · N time of day · 1–9 ships") : null),
+        h("div", { className: "line cams" },
+          h("span", { className: "eyebrow" }, "Camera"),
+          h("div", { className: "seg", role: "group", "aria-label": "Camera view" }, VIEW_LABELS.map(([k, label]) => h("button", { key: k, className: d.view === k ? "on" : "", "aria-pressed": d.view === k, onClick: () => g.setView(k) }, label)))),
+        !touch ? h("div", { className: "hint" }, d.sel.type === "pirate" && d.sel.owned ? "W/S telegraph · A/D rudder · E raid / break off · E canal · T autopilot · V camera · C bridge view · N time of day · 1–9 ships" : d.sel.type === "navy" && d.sel.owned ? "W/S telegraph · A/D rudder · E escort / stand down · F fire missile · T autopilot · V camera · C bridge view · 1–9 ships" : "W/S telegraph · A/D rudder · E berth / canal / cast off · B take booking · F fire (frigate) · T autopilot · V camera · C bridge view · N time of day · 1–9 ships") : null),
       touch ? h(React.Fragment, null,
         h("div", { className: "touch l" },
           h(HoldBtn, { label: "◀ Port", onDown: () => g.rudder(1), onUp: () => g.rudder(0) }),

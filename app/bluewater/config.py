@@ -1,6 +1,6 @@
 import os
 
-VERSION = "3.3.0"   # shown in the sidebar, on the start page and at /api/health
+VERSION = "3.4.0"   # shown in the sidebar, on the start page and at /api/health
 
 
 class Settings:

@@ -17,7 +17,7 @@ Unzip the new version over the old folder, or into a fresh one, and run `docker 
 
 - **Image:** the app image is rebuilt on every `up` (`pull_policy: build`), so new code always lands.
 - **Database:** on start the app adds any new tables and columns to your existing database, and fills in new ports, industries, ships and the demo company. You don't need to delete your data.
-- **Check the version:** the admin sidebar, the start page and `http://localhost:6800/api/health` all show the version. This release is **3.3.0**.
+- **Check the version:** the admin sidebar, the start page and `http://localhost:6800/api/health` all show the version. This release is **3.4.0**.
 
 If the start page still has no *Companies* card, the old container is still running. Run `docker compose down`, then `docker compose up --build`. `docker compose down -v` also works, but it deletes the database.
 
@@ -200,6 +200,13 @@ Industries ask the port to ship their goods by booking supply orders. When custo
 - **Canal:** a land bridge splits the map into two oceans. The Bluewater Canal's locks raise and lower ships one at a time, for a toll.
 - **Pirates and navy:** pirate skiffs hunt cargo ships and can sink them, so the cargo is lost. Navy frigates, which you can also steer, launch missiles at them.
 - **Rescue:** rescue boats go out from the nearest port to pick up survivors in life rafts.
+- **Cameras:** **V** cycles the views, **C** jumps to the bridge and back, or pick one in the *Camera* row of the helm panel.
+  - **Chase:** follows behind the ship. Drag to orbit, scroll to zoom.
+  - **Bridge:** the captain's view from the wheelhouse. Window frames, a console with a sweeping radar and a chart screen, a wheel that turns with the rudder and a telegraph lever that follows the engine order. The horizon tilts as she rolls. Drag to look around, scroll for binoculars. Pirates stand at the open helm of their skiff.
+  - **Bow:** a lookout's view from the forecastle.
+  - **Top:** top-down with the heading up, like a radar plot.
+  - **Orbit:** circles the ship slowly.
+  - **Island:** the nearest container island, with its roads, rail and factories.
 - **Life and lighting:** dock workers, ship crews, trains, road trains, seagulls, drifting clouds and lighthouses. There's a day/night cycle that follows your local time or runs fast, with navigation lights, port floodlights and lit factory windows at night.
 
 ## The game link
@@ -254,4 +261,3 @@ app/bluewater/
   static/game/index.html the 3D game
 app/tests/               end-to-end tests of the full supply chain
 ```
-# shipping-game
