@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% from "_macros.html" import bar %}
+{% block title %}Warehouses{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Warehouse management</span><h1>Warehouses & tank farms</h1><p>Container yards are split into an inbound block (imports waiting for road delivery) and an outbound block (exports waiting for a vessel).</p></div></div>
+<div class="grid g2">
+{% for y in yards %}{% set w = y.wh %}
+<a class="card" href="/admin/warehouses/{{ w.id }}" style="color:inherit;text-decoration:none">
+  <span class="eyebrow">{{ w.code }} · {{ w.port.name }}</span>
+  <h2 style="margin:2px 0 10px">{{ w.name }}</h2>
+  {% if w.kind == 'container_yard' %}
+    {% set b = y.booked %}
+    <div style="display:flex;justify-content:space-between"><span>Booked containers</span><b>{{ b.total }} / {{ w.capacity|num }}</b></div>
+    <div class="bar two" style="margin:6px 0"><i style="width:{{ b.inbound / w.capacity * 100 }}%;background:var(--info)"></i><i style="width:{{ b.outbound / w.capacity * 100 }}%;background:var(--ok)"></i></div>
+    <div class="legend"><span><i style="background:var(--info)"></i>Inbound {{ b.inbound }}</span><span><i style="background:var(--ok)"></i>Outbound {{ b.outbound }}</span></div>
+    <div style="display:flex;justify-content:space-between;margin-top:12px"><span>Live yard in the game</span><b>{{ y.live|num }} / {{ w.capacity|num }}</b></div>
+    {{ bar(y.live / w.capacity * 100) }}
+    <div class="legend"><span>Inbound {{ w.live_inbound|num }}</span><span>Outbound {{ w.live_outbound|num }}</span><span>{{ ('updated ' ~ (w.live_updated_at|dt)) if w.live_updated_at else 'game not connected' }}</span></div>
+  {% else %}
+    <div style="display:flex;justify-content:space-between"><span>Book stock</span><b>{{ w.bulk_level|num }} / {{ w.capacity|num }} {{ w.unit }}</b></div>
+    {{ bar(y.booked.pct) }}
+    <div style="display:flex;justify-content:space-between;margin-top:12px"><span>Live level in the game</span><b>{{ y.live|num }} {{ w.unit }}</b></div>
+    {{ bar(y.live / w.capacity * 100 if w.capacity else 0) }}
+  {% endif %}
+</a>
+{% endfor %}
+</div>
+{% endblock %}

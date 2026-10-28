@@ -1,0 +1,47 @@
+name: bluewater-port
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bluewater}
+      POSTGRES_USER: ${POSTGRES_USER:-bluewater}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bluewater}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-6543}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bluewater} -d ${POSTGRES_DB:-bluewater}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: ./app
+    image: bluewater-port-app:3.3.0
+    pull_policy: build          # rebuild the app image on every `docker compose up`, so code changes always land
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-bluewater}:${POSTGRES_PASSWORD:-bluewater}@db:5432/${POSTGRES_DB:-bluewater}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      API_KEY: ${API_KEY:-}
+      SEED_DEMO: ${SEED_DEMO:-true}
+    ports:
+      - "${APP_PORT:-6800}:8000"
+
+  adminer:
+    image: adminer:4
+    profiles: ["tools"]
+    depends_on: [db]
+    ports:
+      - "${ADMINER_PORT:-6880}:8080"
+
+volumes:
+  pgdata:

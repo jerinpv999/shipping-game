@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Containers{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Tracking</span><h1>Containers</h1><p>Every box carries an ISO 6346 number with a verified check digit.</p></div>
+<form class="inline" method="get"><input name="q" value="{{ q }}" placeholder="Container number" aria-label="Search container number"><input type="hidden" name="status" value="{{ status }}"><button class="ghost">Search</button></form></div>
+<div class="tabs"><a href="/admin/containers" class="{{ 'on' if not status }}">All<span>{{ counts.values()|sum }}</span></a>{% for st, label in CONTAINER_LABELS.items() %}<a href="?status={{ st }}" class="{{ 'on' if status==st }}">{{ label }}<span>{{ counts.get(st,0) }}</span></a>{% endfor %}</div>
+<div class="tablewrap"><table>
+<thead><tr><th>Number</th><th>Size</th><th>Location</th><th>Where</th><th>Customs</th><th>Order</th><th>Route</th><th class="num">Gross kg</th></tr></thead>
+<tbody>{% for c in boxes %}<tr>
+<td class="mono"><a href="/admin/containers/{{ c.number }}">{{ c.number }}</a></td><td>{{ c.size }}</td><td>{{ badge(c.status) }}</td>
+<td>{{ c.warehouse.code if c.warehouse else (c.ship.name if c.ship else (c.vehicle.plate if c.vehicle else (c.order.shipper.name if c.status=='at_industry' and c.order else (c.order.consignee.name if c.order else '')))) }}</td>
+<td>{{ badge(c.customs_status) }}</td><td>{% if c.order %}<a href="/admin/orders/{{ c.order.id }}">{{ c.order.order_no }}</a>{% endif %}</td>
+<td class="muted">{% if c.order %}{{ c.order.origin_port.island }} → {{ c.order.destination_port.island }}{% endif %}</td><td class="num">{{ c.gross_weight_kg|num }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">No containers match.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

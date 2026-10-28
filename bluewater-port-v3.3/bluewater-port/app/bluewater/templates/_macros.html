@@ -1,0 +1,20 @@
+{% macro badge(status, label=None) -%}
+{%- set s = (status or "")|lower -%}
+{%- if s in ["paid","approved","active","cleared","delivered","berthed","running","import_cleared","export_cleared","in"] -%}{% set c = "b-ok" %}
+{%- elif s in ["pending","submitted","under_review","inspection","export_pending","import_pending","draft","starved","export_customs","import_customs","accepted"] -%}{% set c = "b-warn" %}
+{%- elif s in ["lost","suspended","blocked","rejected","held","customs_rejected","customs_held","expired"] -%}{% set c = "b-bad" %}
+{%- elif s in ["departed","none","","cancelled"] -%}{% set c = "b-mute" %}
+{%- else -%}{% set c = "b-info" %}{%- endif -%}
+<span class="badge {{ c }}">{{ label or ORDER_LABELS.get(s) or CONTAINER_LABELS.get(s) or s.replace("_"," ")|capitalize or "—" }}</span>
+{%- endmacro %}
+
+{% macro bar(pct, hot=85) -%}
+<div class="bar"><i class="{{ 'hot' if pct >= hot }}" style="width:{{ [pct,100]|min }}%"></i></div>
+{%- endmacro %}
+
+{% macro status_form(action, current, options) -%}
+<form class="inline" method="post" action="{{ action }}">
+  <select name="status" aria-label="Status">{% for o in options %}<option value="{{ o }}" {{ 'selected' if o == current }}>{{ o|capitalize }}</option>{% endfor %}</select>
+  <button class="small ghost">Set</button>
+</form>
+{%- endmacro %}

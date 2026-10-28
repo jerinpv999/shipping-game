@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}{{ d.decl_no }}{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow"><a href="/admin/customs">Customs</a> · {{ d.decl_type }} declaration</span><h1 class="mono">{{ d.decl_no }}</h1><p>{{ d.order.shipper.name }} → {{ d.order.consignee.name }} · {{ d.port.name }}</p></div>{{ badge(d.status) }}</div>
+<div class="grid g2">
+<div class="stack">
+<div class="card"><h2>Declaration</h2><dl class="facts">
+<dt>Order</dt><dd><a href="/admin/orders/{{ d.order.id }}">{{ d.order.order_no }}</a></dd>
+<dt>Goods</dt><dd>{{ d.order.goods }} · HS <span class="mono">{{ d.hs_code }}</span>{% set ch = DUTY_BY_CHAPTER.get(d.hs_code[:2]) %}{% if ch %} <span class="muted">({{ ch[1] }})</span>{% endif %}</dd>
+<dt>Containers</dt><dd class="mono">{{ d.order.containers|map(attribute='number')|join(', ') }}</dd>
+<dt>Declared value</dt><dd>{{ d.declared_value|money }}</dd>
+<dt>Duty rate</dt><dd>{{ '%.1f'|format(d.duty_rate*100) }}%{% if d.decl_type=='export' %} <span class="muted">(exports are duty-free)</span>{% endif %}</dd>
+<dt>Duty payable</dt><dd><b>{{ d.duty_amount|money }}</b></dd>
+<dt>Officer</dt><dd>{{ d.officer or '—' }}</dd><dt>Submitted</dt><dd>{{ d.submitted_at|dt }}</dd><dt>Decided</dt><dd>{{ d.decided_at|dt }}</dd>
+</dl>{% if d.notes %}<pre style="white-space:pre-wrap;font:inherit;background:var(--surface-2);padding:10px;border-radius:4px;margin:12px 0 0">{{ d.notes }}</pre>{% endif %}</div>
+</div>
+<div class="stack">
+<div class="card"><h2>Officer decision</h2>
+{% if can(user,'customs') %}
+  {% set avail = [] %}{% for a, spec in actions.items() if d.status in spec[0] %}{% set _ = avail.append(a) %}{% endfor %}
+  {% if avail %}<form method="post" action="/admin/customs/{{ d.id }}/action" class="stack">
+    <label for="notes">Notes for the record<textarea id="notes" name="notes" placeholder="Documents checked, seal numbers, inspection findings…"></textarea></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      {% for a in avail %}<button name="action" value="{{ a }}" class="{{ {'clear':'ok','reject':'bad','hold':'warn'}.get(a,'ghost') }}">{{ {'review':'Start review','inspect':'Send to inspection','hold':'Place on hold','clear':'Clear','reject':'Reject'}[a] }}</button>{% endfor %}
+    </div></form>
+  {% else %}<p class="muted">This declaration is {{ d.status }}. No further action.</p>{% endif %}
+{% else %}<p class="muted">Only customs officers can decide declarations.</p>{% endif %}
+</div>
+<div class="card"><h2>Record</h2><ul class="feed">{% for a in log %}<li><time>{{ a.at|dt }}</time><span><b>{{ a.actor }}</b> {{ a.action }} <span class="muted">{{ a.detail }}</span></span></li>{% endfor %}</ul></div>
+</div></div>
+{% endblock %}

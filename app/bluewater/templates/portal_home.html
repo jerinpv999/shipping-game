@@ -1,0 +1,25 @@
+{% extends "portal_base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">{{ company.reg_no }} · {{ {'both':'Ships and road haulage','shipping_line':'Shipping line','haulier':'Road haulier'}[company.company_type] }}</span><h1>Welcome, {{ user.full_name.split(' ')[0] if user.full_name else user.username }}</h1><p>{{ open_count }} cargo requests are open on the transit board.</p></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn ghost" href="/portal/requests?fit=1">Find cargo for my fleet</a><a class="btn" href="/game">Sail your fleet in 3D</a></div></div>
+<div class="grid g4">
+  <div class="card kpi"><span>Balance</span><b class="money">{{ company.balance|money }}</b><span>{{ badge(company.status) }}</span></div>
+  <div class="card kpi"><span>Ships</span><b>{{ company.ships|length }}</b><span>{{ company.ships|selectattr('status','equalto','approved')|list|length }} approved to sail</span></div>
+  <div class="card kpi"><span>Road vehicles</span><b>{{ company.vehicles|length }}</b><span>{{ company.vehicles|selectattr('status','equalto','active')|list|length }} cleared for the gates</span></div>
+  <div class="card kpi"><span>Jobs delivered</span><b>{{ done|length }}</b><span>{{ earned|money }} gross freight</span></div>
+</div>
+<div class="grid g2" style="margin-top:14px">
+  <div class="card"><h2>Jobs in progress</h2>
+  {% for r in jobs %}<div class="job" style="padding:10px 0;border-bottom:1px dashed var(--line)">
+    <div><div class="route">{{ r.origin }}<span>→</span>{{ r.destination }}</div><div class="muted" style="font-size:13px"><span class="mono">{{ r.ref }}</span> · {{ r|qty }} · {{ r.ship.name if r.ship else r.vehicle.plate }} · {{ badge(r.status) }}</div></div>
+    <form class="inline" method="post" action="/portal/requests/{{ r.id }}/{{ 'start' if r.status=='accepted' else 'deliver' }}"><button class="{{ 'ok' if r.status=='in_transit' }}">{{ 'Start' if r.status=='accepted' else 'Mark delivered' }}</button></form>
+  </div>{% else %}<p class="empty">No jobs running. <a href="/portal/requests">Pick one from the board.</a></p>{% endfor %}</div>
+  <div class="card"><h2>Recent money</h2>
+  <ul class="feed">{% for e in entries %}<li><time>{{ e.at|dt }}</time><span style="display:flex;justify-content:space-between;gap:10px"><span>{{ e.description }}</span><b class="money {{ 'pos' if e.amount > 0 else 'neg' }}">{{ '+' if e.amount > 0 }}{{ e.amount|money }}</b></span></li>{% endfor %}</ul>
+  <p style="margin:8px 0 0"><a href="/portal/ledger">Full ledger →</a></p></div>
+</div>
+{% if not company.ships and not company.vehicles %}
+<div class="card" style="margin-top:14px"><h2>Start your fleet</h2><p>Buy a ship or a road train in the <a href="/portal/market">marketplace</a>. New assets need port-authority approval before they can carry cargo.</p></div>
+{% endif %}
+{% endblock %}

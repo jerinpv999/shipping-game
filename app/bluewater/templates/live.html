@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, bar %}
+{% block title %}Live from game{% endblock %}
+{% block extrahead %}<meta http-equiv="refresh" content="10">{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">3D game link</span><h1>Live from the game</h1><p>{% if st %}Last snapshot {{ st.updated_at|dt }}. This page refreshes every 10 seconds.{% else %}No snapshot yet. Open the game from this server and it will report every 5 seconds.{% endif %}</p></div><a class="btn" href="/game" target="_blank" rel="noopener">Open 3D game</a></div>
+<div class="grid g3">
+{% for s in ships %}<div class="card kpi"><span>{{ s.name }}</span><b>{{ s.live_cargo|num }} <small style="color:var(--muted);font-size:14px">{{ s.capacity_unit if s.ship_type != 'container' else 'boxes' }}</small></b><span>{{ s.live_status or 'No data' }}</span>{{ bar(s.live_cargo / s.capacity * 100 if s.capacity else 0, 1000) }}</div>{% endfor %}
+</div>
+<div class="grid g2" style="margin-top:14px">
+<div class="card"><h2>Yards & tanks</h2><div class="stack">
+{% for w in whs %}<div><div style="display:flex;justify-content:space-between;gap:8px"><b>{{ w.name }}</b><span class="muted">{{ w.live_level|num }} / {{ w.capacity|num }} {{ w.unit }}{% if w.kind=='container_yard' %} · in {{ w.live_inbound|num }} · out {{ w.live_outbound|num }}{% endif %}</span></div>{{ bar(w.live_level / w.capacity * 100) }}</div>{% endfor %}
+</div></div>
+<div class="card"><h2>Industries</h2><div class="tablewrap"><table><thead><tr><th>Industry</th><th>State</th><th class="num">Ready to ship</th><th class="num">To unpack</th></tr></thead><tbody>
+{% for i in inds %}<tr><td>{{ i.name }} <span class="muted">{{ i.port.island }}</span></td><td>{{ badge(i.live_status or 'none') }}</td><td class="num">{{ i.live_ready|int }}</td><td class="num">{{ i.live_stock|round(1) }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+</div>
+<div class="card" style="margin-top:14px"><h2>Event stream</h2>
+<div class="tablewrap"><table><thead><tr><th>Time</th><th>Event</th><th>Details</th></tr></thead><tbody>
+{% for e in events %}<tr><td class="muted">{{ e.at|dt }}</td><td>{{ badge(e.event_type, e.event_type.replace('_',' ')|capitalize) }}</td><td class="mono" style="font-size:12px">{% for k, v in e.payload.items() %}{{ k }}={{ v }} {% endfor %}</td></tr>
+{% else %}<tr><td colspan="3" class="empty">Waiting for the game.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

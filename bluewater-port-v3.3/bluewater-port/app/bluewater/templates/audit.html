@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">System</span><h1>Audit log</h1><p>Every registration, gate movement and customs decision, with who did it.</p></div>
+<form class="inline" method="get"><input name="q" value="{{ q }}" placeholder="User, action or reference" aria-label="Filter audit log"><button class="ghost">Filter</button></form></div>
+<div class="tablewrap"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Entity</th><th>Reference</th><th>Detail</th></tr></thead><tbody>
+{% for a in rows %}<tr><td class="muted">{{ a.at|dt }}</td><td>{{ a.actor }}</td><td>{{ a.action.replace('_',' ') }}</td><td>{{ a.entity }}</td><td class="mono">{{ a.entity_ref }}</td><td class="muted">{{ a.detail }}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No entries.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

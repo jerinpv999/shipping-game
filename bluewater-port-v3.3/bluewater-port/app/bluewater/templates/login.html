@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Bluewater Port Authority</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body><div class="login"><div class="card">
+  <h1>Bluewater <span>Port</span></h1>
+  <p class="muted" style="margin:0 0 18px">Sign in to the port authority admin panel.</p>
+  {% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.msg }}</div>{% endfor %}
+  <form method="post" action="/admin/login" class="stack">
+    <label for="username">Username<input id="username" name="username" autocomplete="username" required autofocus></label>
+    <label for="password">Password<input id="password" type="password" name="password" autocomplete="current-password" required></label>
+    <button>Sign in</button>
+  </form>
+  <p class="muted" style="font-size:12px;margin:16px 0 0">Demo accounts: admin / admin123 · customs / customs123 · gate / gate123 · warehouse / warehouse123</p>
+</div></div></body></html>

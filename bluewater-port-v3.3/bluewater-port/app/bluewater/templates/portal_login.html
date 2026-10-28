@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Company sign in · Bluewater Port</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body><div class="login"><div class="card">
+  <span class="eyebrow">Company portal</span>
+  <h1>Bluewater <span>Port</span></h1>
+  <p class="muted" style="margin:0 0 18px">Shipping companies and seafarers sign in here. You can also sign in inside the 3D game.</p>
+  {% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.msg }}</div>{% endfor %}
+  <form method="post" action="/portal/login" class="stack">
+    <label for="username">Username<input id="username" name="username" autocomplete="username" required autofocus></label>
+    <label for="password">Password<input id="password" type="password" name="password" autocomplete="current-password" required></label>
+    <button>Sign in</button>
+  </form>
+  <p style="margin:16px 0 0">New here? <a href="/portal/register">Register a company</a> · <a href="/crew/register">Register as a seafarer</a></p>
+  <p class="muted" style="font-size:12px;margin:8px 0 0">Demo company: oceanic / oceanic123 · Demo captain: captain / captain123 · Port staff use the <a href="/admin/login">admin panel</a>.</p>
+</div></div></body></html>

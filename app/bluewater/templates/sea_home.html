@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ v.name }} · Bluewater Port</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body>
+<header class="topbar"><div class="in">
+  <div class="brand"><b>Bluewater <span>Port</span></b><small>{{ F.title }} · {{ user.full_name }}</small></div>
+  <nav aria-label="{{ F.group }}"><a href="/sea" class="on">{{ F.group }}</a><a href="/game" class="play">Sail in 3D ↗</a></nav>
+  <a href="/sea/logout" style="color:var(--nav-text);font-size:13px">Sign out</a>
+</div></header>
+<div class="page">
+  {% for f in flashes %}<div class="flash {{ f.kind }}" role="status">{{ f.msg }}</div>{% endfor %}
+<div class="head"><div><span class="eyebrow">{{ F.group }} · {{ F.title }}</span><h1>{{ v.name }}</h1>
+<p>{% if faction == 'pirate' %}Your {{ F.craft|lower }} waits in open water. Find a cargo ship, come alongside and press <b>E</b> to raid it. Stay clear of frigates.{% else %}Your {{ F.craft|lower }} is on station. Come within 200 m of a cargo ship and press <b>E</b> to escort it. Press <b>F</b> to fire at pirates.{% endif %}</p></div>
+<a class="btn" href="/game">Sail {{ v.name }} in 3D</a></div>
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card kpi"><span class="muted">{{ F.earn }}</span><b style="font-size:24px;display:block">${{ '{:,.0f}'.format(v.earnings) }}</b></div>
+  <div class="card kpi"><span class="muted">{{ F.raids }}</span><b style="font-size:24px;display:block">{{ v.raids }}</b></div>
+  <div class="card kpi"><span class="muted">{{ F.kills }}</span><b style="font-size:24px;display:block">{{ v.kills }}</b></div>
+  <div class="card kpi"><span class="muted">{{ 'Attacks broken up' if faction == 'marine' else 'Skiffs lost' }}</span><b style="font-size:24px;display:block">{{ v.saves if faction == 'marine' else v.losses }}</b></div>
+</div>
+<div class="grid g2">
+  {% for title, rows, earn in [('Most wanted pirates', pirates, 'Plunder'), ('Top marines', marines, 'Earned')] %}
+  <div class="card"><h2>{{ title }}</h2>
+  <table><thead><tr><th>#</th><th>Vessel</th><th>Captain</th><th class="num">{{ earn }}</th><th class="num">{{ 'Sunk' if loop.index == 1 else 'Pirates' }}</th></tr></thead><tbody>
+  {% for r in rows %}<tr{% if r.id == v.id %} style="font-weight:600"{% endif %}><td>{{ loop.index }}</td><td>{{ r.name }}</td><td>{{ r.user.full_name }}</td><td class="num">${{ '{:,.0f}'.format(r.earnings) }}</td><td class="num">{{ r.kills }}</td></tr>
+  {% else %}<tr><td colspan="5" class="empty">Nobody yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% endfor %}
+</div>
+<form class="card" method="post" action="/sea/rename" style="margin-top:14px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+  <label style="flex:1;min-width:200px">Rename your {{ F.craft|lower }}<input name="name" value="{{ v.name }}" maxlength="40"></label><button class="small">Save</button></form>
+</div></body></html>

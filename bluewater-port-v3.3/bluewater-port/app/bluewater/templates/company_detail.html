@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, status_form %}
+{% block title %}{{ co.name }}{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow"><a href="/admin/companies">Companies</a> · {{ co.reg_no }}</span><h1>{{ co.name }}</h1><p>{{ co.country }} · {{ co.contact_email }} · balance <b>{{ co.balance|money }}</b></p></div>
+<div style="display:flex;gap:10px;align-items:center">{{ badge(co.status) }}{% if can(user,'companies') %}{{ status_form('/admin/companies/%d/status'|format(co.id), co.status, ['pending','approved','suspended']) }}{% endif %}</div></div>
+<div class="grid g2">
+<div class="card"><h2>Ships</h2><div class="tablewrap"><table><thead><tr><th>Ship</th><th>IMO</th><th class="num">Capacity</th><th>Registration</th></tr></thead><tbody>
+{% for s in co.ships %}<tr><td>{{ s.name }}<div class="muted" style="font-size:12px">{{ s.model }}</div></td><td class="mono">{{ s.imo }}</td><td class="num">{{ s.capacity|num }} {{ s.capacity_unit }}</td><td>{{ badge(s.status) }}</td></tr>{% else %}<tr><td colspan="4" class="empty">None</td></tr>{% endfor %}
+</tbody></table></div><p style="margin:8px 0 0"><a href="/admin/ships">Approve in ship registry →</a></p></div>
+<div class="card"><h2>Vehicles</h2><div class="tablewrap"><table><thead><tr><th>Plate</th><th>Type</th><th>Gate clearance</th></tr></thead><tbody>
+{% for v in co.vehicles %}<tr><td class="mono">{{ v.plate }}</td><td>{{ v.vehicle_type.replace('_',' ') }}</td><td>{{ badge(v.status) }}</td></tr>{% else %}<tr><td colspan="3" class="empty">None</td></tr>{% endfor %}
+</tbody></table></div><p style="margin:8px 0 0"><a href="/admin/vehicles">Approve in vehicle registry →</a></p></div>
+</div>
+<div class="grid g2" style="margin-top:14px">
+<div class="card"><h2>Transit jobs</h2><div class="tablewrap"><table><thead><tr><th>Request</th><th>Route</th><th class="num">Freight</th><th>Status</th></tr></thead><tbody>
+{% for r in reqs %}<tr><td class="mono">{{ r.ref }}</td><td>{{ r.origin }} → {{ r.destination }}</td><td class="num">{{ r.rate|money }}</td><td>{{ badge(r.status) }}</td></tr>{% else %}<tr><td colspan="4" class="empty">None</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="card"><h2>Ledger</h2>
+{% if can(user,'companies') %}<form class="form" method="post" action="/admin/companies/{{ co.id }}/adjust" style="margin-bottom:12px">
+<label for="amount">Adjustment (USD, negative to debit)<input id="amount" name="amount" type="number" step="any" required></label><label for="reason">Reason<input id="reason" name="reason" required placeholder="Demurrage refund, penalty…"></label><button class="ghost">Post</button></form>{% endif %}
+<ul class="feed">{% for e in entries %}<li><time>{{ e.at|dt }}</time><span style="display:flex;justify-content:space-between;gap:10px"><span>{{ e.description }}</span><b class="money {{ 'pos' if e.amount > 0 else 'neg' }}">{{ e.amount|money }}</b></span></li>{% endfor %}</ul></div>
+</div>
+{% endblock %}

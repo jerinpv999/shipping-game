@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, bar %}
+{% block title %}{{ wh.name }}{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow"><a href="/admin/warehouses">Warehouses</a> · {{ wh.code }}</span><h1>{{ wh.name }}</h1><p>{{ wh.port.name }} · capacity {{ wh.capacity|num }} {{ wh.unit }}</p></div></div>
+{% if occ %}
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card kpi"><span>Utilisation</span><b>{{ occ.pct }}%</b>{{ bar(occ.pct) }}</div>
+  <div class="card kpi"><span>Inbound block</span><b>{{ occ.inbound }}</b><span>imports awaiting customs / trucks</span></div>
+  <div class="card kpi"><span>Outbound block</span><b>{{ occ.outbound }}</b><span>exports awaiting a vessel</span></div>
+  <div class="card kpi"><span>Free slots</span><b>{{ (wh.capacity - occ.total)|num }}</b><span>live in game: {{ wh.live_level|num }} used</span></div>
+</div>
+<div class="tablewrap" style="margin-bottom:14px"><table>
+<thead><tr><th>Container</th><th>Block</th><th>Customs</th><th>Order</th><th>Goods</th><th>Next step</th></tr></thead>
+<tbody>{% for c in boxes %}<tr>
+  <td class="mono"><a href="/admin/containers/{{ c.number }}">{{ c.number }}</a></td>
+  <td>{{ badge(c.status) }}</td><td>{{ badge(c.customs_status) }}</td>
+  <td>{% if c.order %}<a href="/admin/orders/{{ c.order.id }}">{{ c.order.order_no }}</a>{% endif %}</td>
+  <td>{{ c.order.goods if c.order }}</td>
+  <td class="muted">{% if c.status=='in_yard_outbound' %}{{ 'Load on vessel' if c.customs_status=='export_cleared' else 'Export customs' }}{% else %}{{ 'Gate-out to ' ~ c.order.consignee.name if c.customs_status=='import_cleared' else 'Import customs' }}{% endif %}</td>
+</tr>{% else %}<tr><td colspan="6" class="empty">The yard is empty.</td></tr>{% endfor %}</tbody></table></div>
+{% else %}
+<div class="grid g2" style="margin-bottom:14px">
+  <div class="card kpi"><span>Book stock</span><b>{{ wh.bulk_level|num }} {{ wh.unit }}</b>{{ bar(wh.bulk_level / wh.capacity * 100) }}<span>live in game: {{ wh.live_level|num }} {{ wh.unit }}</span></div>
+  {% if can(user,'warehouse') %}<div class="card"><h2>Record a bulk movement</h2>
+  <form class="form" method="post" action="/admin/warehouses/{{ wh.id }}/bulk">
+    <label for="direction">Direction<select id="direction" name="direction"><option value="in">Receive into tanks</option><option value="out">Release from tanks</option></select></label>
+    <label for="quantity">Quantity ({{ wh.unit }})<input id="quantity" name="quantity" type="number" min="1" step="any" required></label>
+    <label for="reference">Reference<input id="reference" name="reference" placeholder="Bill of lading / pipeline ticket"></label>
+    <button>Record</button>
+  </form></div>{% endif %}
+</div>
+{% endif %}
+<div class="card"><h2>Stock movements</h2>
+<div class="tablewrap"><table><thead><tr><th>Time</th><th>Direction</th><th class="num">Quantity</th><th>Container</th><th>Source</th><th>Reference</th><th>By</th></tr></thead>
+<tbody>{% for m in moves %}<tr><td>{{ m.at|dt }}</td><td>{{ badge('in' if m.direction=='in' else 'departed', 'In' if m.direction=='in' else 'Out') }}</td><td class="num">{{ m.quantity|num }}</td>
+<td class="mono">{% if m.container %}<a href="/admin/containers/{{ m.container.number }}">{{ m.container.number }}</a>{% endif %}</td><td>{{ m.source|capitalize }}</td><td>{{ m.reference }}</td><td class="muted">{{ m.created_by }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No movements yet.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

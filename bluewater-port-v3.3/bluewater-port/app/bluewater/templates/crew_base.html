@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Seafarer{% endblock %} · Bluewater Port</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body>
+<header class="topbar"><div class="in">
+  <div class="brand"><b>Bluewater <span>Port</span></b><small>Seafarer · {{ user.full_name }}</small></div>
+  <nav aria-label="Seafarer"><a href="/crew" class="{{ 'on' if path == '/crew' }}">My career</a><a href="/game" class="play">Sail in 3D ↗</a></nav>
+  <a href="/crew/logout" style="color:var(--nav-text);font-size:13px">Sign out</a>
+</div></header>
+<div class="page">
+  {% for f in flashes %}<div class="flash {{ f.kind }}" role="status">{{ f.msg }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</div></body></html>

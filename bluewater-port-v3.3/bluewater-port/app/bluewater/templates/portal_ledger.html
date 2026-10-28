@@ -1,0 +1,12 @@
+{% extends "portal_base.html" %}
+{% block title %}Ledger{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Ledger</span><h1>Money in and out</h1><p>Every purchase, freight payment and port due on {{ company.name }}'s account.</p></div></div>
+<div class="grid g4" style="margin-bottom:14px">
+{% for k, label in [("opening_balance","Founding capital"),("purchase","Fleet purchases"),("freight","Freight earned"),("port_dues","Port dues")] %}
+<div class="card kpi"><span>{{ label }}</span><b class="money {{ 'pos' if totals.get(k,0) > 0 else ('neg' if totals.get(k,0) < 0) }}">{{ totals.get(k,0)|money }}</b></div>{% endfor %}
+</div>
+<div class="tablewrap"><table><thead><tr><th>Time</th><th>Type</th><th>Description</th><th class="num">Amount</th><th class="num">Balance</th></tr></thead><tbody>
+{% for e in entries %}<tr><td class="muted">{{ e.at|dt }}</td><td>{{ e.kind.replace('_',' ')|capitalize }}</td><td>{{ e.description }}</td><td class="num money {{ 'pos' if e.amount > 0 else 'neg' }}">{{ '+' if e.amount > 0 }}{{ e.amount|money }}</td><td class="num money">{{ e.balance_after|money }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

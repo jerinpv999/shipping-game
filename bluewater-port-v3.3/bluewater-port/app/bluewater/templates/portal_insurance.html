@@ -1,0 +1,40 @@
+{% extends "portal_base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Insurance{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Insurance · {{ UNDERWRITER }}</span><h1>Hull and cargo cover</h1>
+<p>If a ship sinks, to pirates or in a collision, a policy pays out so you can buy a new one. Premiums cover {{ TERM_DAYS }} days and are paid up front. Without cover, the ship is gone and you pay the shipper for any cargo lost with her.</p></div></div>
+<div class="grid g3" style="margin-bottom:14px">
+{% for key, p in PLANS.items() %}<div class="card stack" style="gap:6px"><h2 style="margin:0">{{ p.label }}</h2>
+  <p class="muted" style="margin:0;font-size:13px">{{ p.blurb }}</p>
+  <dl class="facts" style="margin-top:4px"><dt>Hull</dt><dd>{{ (p.hull * 100)|round|int }} %</dd><dt>Cargo liability</dt><dd>{{ (p.cargo * 100)|round|int }} %</dd>
+  <dt>Piracy</dt><dd>{{ 'Covered' if p.piracy else 'Excluded' }}</dd><dt>Deductible</dt><dd>{{ p.deductible|money }}</dd><dt>Premium</dt><dd>{{ '%.1f'|format(p.rate * 100) }} % of hull value / {{ TERM_DAYS }} days</dd></dl></div>{% endfor %}
+</div>
+<div class="card" style="margin-bottom:14px"><h2>Your ships</h2>
+<div class="tablewrap"><table><thead><tr><th>Ship</th><th class="num">Hull value</th><th>Cover</th><th>Valid until</th><th>Insure / change plan</th></tr></thead><tbody>
+{% for s in (company.ships|rejectattr('status', 'equalto', 'lost')|list) + (company.ships|selectattr('status', 'equalto', 'lost')|sort(attribute='id', reverse=True)|list) %}{% set p = policies.get(s.id) %}<tr>
+<td><b>{{ s.name }}</b> {% if s.status == 'lost' %}{{ badge('lost', 'Lost at sea') }}{% endif %}<div class="muted" style="font-size:12px">{{ s.model }}</div></td>
+<td class="num">{{ ship_value(s)|money }}</td>
+<td>{% if p %}{{ badge('active', PLANS[p.plan].label) }} <span class="mono muted" style="font-size:12px">{{ p.ref }}</span>{% elif s.status == 'lost' %}<span class="muted">—</span>{% else %}{{ badge('blocked', 'Uninsured') }}{% endif %}</td>
+<td>{% if p %}{{ p.valid_until|dt }}{% endif %}</td>
+<td>{% if s.status != 'lost' %}<form class="inline" method="post" action="/portal/insurance/buy" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+  <input type="hidden" name="ship_id" value="{{ s.id }}">
+  <select name="plan" aria-label="Plan for {{ s.name }}">{% for key, pl in PLANS.items() %}<option value="{{ key }}" {{ 'selected' if (p and p.plan == key) or (not p and key == 'standard') }}>{{ pl.label }} · {{ premium_for(s, key)|money }}</option>{% endfor %}</select>
+  <button class="small">{{ 'Change plan' if p else 'Buy cover' }}</button></form>
+  {% if p %}<form class="inline" method="post" action="/portal/insurance/{{ p.id }}/renew" style="margin-top:6px;display:inline-block"><button class="small ghost">Renew {{ TERM_DAYS }} days · {{ p.premium|money }}</button></form>
+  <form class="inline" method="post" action="/portal/insurance/{{ p.id }}/cancel" style="display:inline-block"><button class="small ghost">Cancel</button></form>{% endif %}
+{% elif s.replaced_by %}<span class="muted">Replaced by <b>{{ s.replaced_by }}</b></span>{% else %}<a class="btn small" href="/portal/fleet">Replace ship</a>{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="empty">No ships yet. Buy one in the marketplace.</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="card" style="margin-bottom:14px"><h2>Claims</h2>
+<div class="tablewrap"><table><thead><tr><th>Claim</th><th>Ship</th><th>Cover</th><th>Cause</th><th class="num">Loss</th><th class="num">Payable</th><th>Status</th></tr></thead><tbody>
+{% for c in claims %}<tr><td class="mono">{{ c.ref }}<div class="muted" style="font-size:12px">{{ c.created_at|dt }}</div></td><td>{{ c.ship.name }}{% if c.job_ref %}<div class="muted mono" style="font-size:12px">{{ c.job_ref }}</div>{% endif %}</td>
+<td>{{ c.kind|capitalize }}</td><td>{{ c.cause|capitalize }}</td><td class="num">{{ c.loss|money }}</td><td class="num"><b>{{ c.amount|money }}</b></td>
+<td>{{ badge(c.status) }}{% if c.note %}<div class="muted" style="font-size:12px">{{ c.note }}</div>{% endif %}{% if c.status == 'under_review' %}<div class="muted" style="font-size:12px">Paid automatically within 10 minutes unless the port authority decides first</div>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No claims. Safe sailing.</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="card"><h2>Policy history</h2>
+<div class="tablewrap"><table><thead><tr><th>Policy</th><th>Ship</th><th>Plan</th><th class="num">Premium</th><th>From</th><th>Until</th><th>Status</th></tr></thead><tbody>
+{% for p in history %}<tr><td class="mono">{{ p.ref }}</td><td>{{ p.ship.name }}</td><td>{{ PLANS[p.plan].label }}</td><td class="num">{{ p.premium|money }}</td><td>{{ p.starts_at|dt }}</td><td>{{ p.valid_until|dt }}</td><td>{{ badge(p.status) }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No policies yet.</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

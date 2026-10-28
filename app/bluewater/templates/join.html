@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join as {{ 'a pirate' if faction == 'pirate' else 'a marine' }} · Bluewater Port</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body><div class="login"><div class="card" style="width:min(600px,100%)">
+  <span class="eyebrow">{{ F.group }}</span>
+  <h1>{{ 'Join the pirates' if faction == 'pirate' else 'Join the marines' }}</h1>
+  <p class="muted" style="margin:0 0 18px">{% if faction == 'pirate' %}Get a fast skiff, hunt cargo ships in the 3D game and raid their cargo. Plunder counts on the leaderboard. Watch out: navy frigates and marine players will fire on you.{% else %}Get a navy frigate, escort cargo ships, drive pirates off and destroy them with missiles. You're paid for every escort and every pirate destroyed.{% endif %}</p>
+  {% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.msg }}</div>{% endfor %}
+  <form method="post" action="/join/{{ faction }}" class="stack">
+    <div class="form">
+      <label for="full_name">Your name<input id="full_name" name="full_name" value="{{ form.full_name or '' }}" autocomplete="name" required></label>
+      <label for="email">Email<input id="email" name="email" type="email" value="{{ form.email or '' }}" autocomplete="email" required></label>
+      <label for="vessel_name">{{ 'Name your skiff' if faction == 'pirate' else 'Name your frigate' }}<input id="vessel_name" name="vessel_name" value="{{ form.vessel_name or '' }}" placeholder="{{ 'Black Gull' if faction == 'pirate' else 'BNS Resolute' }}" maxlength="40"></label>
+      <label for="username">Username<input id="username" name="username" value="{{ form.username or '' }}" autocomplete="username" minlength="3" required></label>
+      <label for="password">Password (8+ characters)<input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+    </div>
+    <button>{{ 'Raise the black flag' if faction == 'pirate' else 'Take the commission' }}</button>
+  </form>
+  <p style="margin:16px 0 0">Already signed up? <a href="/portal/login">Sign in</a> · {% if faction == 'pirate' %}<a href="/join/marine">Join the marines instead</a>{% else %}<a href="/join/pirate">Join the pirates instead</a>{% endif %}</p>
+</div></div></body></html>

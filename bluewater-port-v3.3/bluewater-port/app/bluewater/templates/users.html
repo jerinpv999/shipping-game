@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Users & roles{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">System</span><h1>Users & roles</h1><p>Everyone signed in can view all records; roles control who can change them.</p></div></div>
+<div class="grid g2" style="margin-bottom:14px">
+<div class="card"><h2>Role permissions</h2><div class="tablewrap"><table><thead><tr><th>Area</th>{% for r in ROLES %}<th>{{ r }}</th>{% endfor %}</tr></thead><tbody>
+{% for area, roles in perms.items() %}<tr><td>{{ area|capitalize }}</td>{% for r in ROLES %}<td>{{ '✓' if r in roles else '' }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div></div>
+{% if can(user,'users') %}<div class="card"><h2>Add a user</h2><form class="form" method="post" action="/admin/users">
+<label for="username">Username<input id="username" name="username" required></label><label for="full_name">Full name<input id="full_name" name="full_name"></label>
+<label for="role">Role<select id="role" name="role">{% for r in ROLES %}<option>{{ r }}</option>{% endfor %}</select></label>
+<label for="password">Password (8+ characters)<input id="password" name="password" type="password" minlength="8" required></label><button>Add user</button></form></div>{% endif %}
+</div>
+<div class="tablewrap"><table><thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody>
+{% for u in users %}<tr><td class="mono">{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.role|capitalize }}</td><td>{{ badge('active' if u.active else 'suspended', 'Active' if u.active else 'Disabled') }}</td><td class="muted">{{ u.created_at|dt }}</td>
+<td>{% if can(user,'users') and u.id != user.id %}<form class="inline" method="post" action="/admin/users/{{ u.id }}/toggle"><button class="small ghost">{{ 'Disable' if u.active else 'Enable' }}</button></form>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

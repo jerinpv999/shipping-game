@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Customs{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Customs clearance</span><h1>Customs declarations</h1><p>Export declarations are filed when boxes reach the origin yard; import declarations are raised automatically on discharge, with duty from the HS tariff.</p></div></div>
+{% set open_n = counts.get('submitted',0) + counts.get('under_review',0) + counts.get('inspection',0) + counts.get('held',0) %}
+<div class="tabs"><a href="/admin/customs" class="{{ 'on' if not status }}">All<span>{{ counts.values()|sum }}</span></a><a href="?status=open" class="{{ 'on' if status=='open' }}">Open queue<span>{{ open_n }}</span></a>{% for st in ['submitted','under_review','inspection','held','cleared','rejected'] %}<a href="?status={{ st }}" class="{{ 'on' if status==st }}">{{ st.replace('_',' ')|capitalize }}<span>{{ counts.get(st,0) }}</span></a>{% endfor %}</div>
+<div class="tablewrap"><table>
+<thead><tr><th>Declaration</th><th>Type</th><th>Order</th><th>Port</th><th>HS</th><th class="num">Declared value</th><th class="num">Duty</th><th>Status</th><th>Officer</th><th>Submitted</th></tr></thead>
+<tbody>{% for d in decls %}<tr>
+<td class="mono"><a href="/admin/customs/{{ d.id }}">{{ d.decl_no }}</a></td><td>{{ d.decl_type|capitalize }}</td><td><a href="/admin/orders/{{ d.order.id }}">{{ d.order.order_no }}</a></td>
+<td>{{ d.port.island }}</td><td class="mono">{{ d.hs_code }}</td><td class="num">{{ d.declared_value|money }}</td><td class="num">{{ d.duty_amount|money }}{% if d.duty_rate %} <span class="muted">({{ '%.1f'|format(d.duty_rate*100) }}%)</span>{% endif %}</td>
+<td>{{ badge(d.status) }}</td><td class="muted">{{ d.officer or '—' }}</td><td class="muted">{{ d.submitted_at|dt }}</td></tr>
+{% else %}<tr><td colspan="10" class="empty">No declarations.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "portal_base.html" %}{% from "_ships_svg.html" import silhouette %}
+{% block title %}Marketplace{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Marketplace</span><h1>Buy ships and vehicles</h1><p>Prices are paid from your balance at once. Each asset is registered in your company's name and goes to the port authority for approval.</p></div></div>
+{% if company.company_type != 'haulier' %}
+<h2 style="font-size:17px;margin:4px 0 10px">Ships</h2>
+<div class="grid g3">
+{% for key, m in SHIP_MODELS.items() %}{% set label, kind, cap, unit, price, desc = m %}
+<form class="card product" method="post" action="/portal/market/ship">
+  <input type="hidden" name="model" value="{{ key }}">
+  {{ silhouette(kind) }}
+  <div class="top"><b>{{ label }}</b><span class="price">{{ price|money }}</span></div>
+  <div class="spec"><span>{{ cap|num }} {{ unit }}</span><span>{{ {'container':'Containers','crude':'Crude oil','lng':'LNG'}[kind] }}</span></div>
+  <p class="muted" style="margin:0;font-size:13px">{{ desc }}</p>
+  <div class="form" style="grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)">
+    <label for="name-{{ key }}">Ship name<input id="name-{{ key }}" name="name" required placeholder="{{ company.name.split(' ')[0] }} {{ ['Star','Spirit','Voyager','Pride','Dawn'][loop.index0] }}"></label>
+    <label for="flag-{{ key }}">Flag<input id="flag-{{ key }}" name="flag" value="{{ company.country }}"></label>
+  </div>
+  <label for="plan-{{ key }}">Insurance ({{ UNDERWRITER }}, {{ TERM_DAYS }} days)<select id="plan-{{ key }}" name="plan"><option value="">None: you carry the risk</option>{% for pk, pl in PLANS.items() %}<option value="{{ pk }}" {{ 'selected' if pk == 'standard' }}>{{ pl.label }} · {{ (price * pl.rate)|money }}</option>{% endfor %}</select></label>
+  <button {{ 'disabled' if company.balance < price }}>{{ 'Buy ship' if company.balance >= price else 'Not enough funds' }}</button>
+</form>{% endfor %}
+</div>{% endif %}
+{% if company.company_type != 'shipping_line' %}
+<h2 style="font-size:17px;margin:22px 0 10px">Road vehicles</h2>
+<div class="grid g3">
+{% for key, m in VEHICLE_MODELS.items() %}{% set label, vtype, trailers, maxc, price, desc = m %}
+<form class="card product" method="post" action="/portal/market/vehicle">
+  <input type="hidden" name="model" value="{{ key }}">
+  {{ silhouette('road') }}
+  <div class="top"><b>{{ label }}</b><span class="price">{{ price|money }}</span></div>
+  <div class="spec"><span>{{ maxc }} container{{ 's' if maxc > 1 }}</span><span>{{ trailers }} trailer{{ 's' if trailers > 1 }}</span></div>
+  <p class="muted" style="margin:0;font-size:13px">{{ desc }}</p>
+  <label for="plate-{{ key }}">Registration plate<input id="plate-{{ key }}" name="plate" required placeholder="KL-01-AB-1234"></label>
+  <button {{ 'disabled' if company.balance < price }}>{{ 'Buy vehicle' if company.balance >= price else 'Not enough funds' }}</button>
+</form>{% endfor %}
+</div>{% endif %}
+{% endblock %}

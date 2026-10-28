@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}{{ c.number }}{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow"><a href="/admin/containers">Containers</a></span><h1 class="mono" style="font-size:26px">{{ c.number[:4] }} {{ c.number[4:10] }} {{ c.number[10] }}</h1><p>Owner code {{ c.number[:3] }}, category {{ c.number[3] }}, serial {{ c.number[4:10] }}, check digit {{ c.number[10] }}</p></div></div>
+<div class="grid g2">
+<div class="card"><h2>Current state</h2><dl class="facts">
+<dt>Location</dt><dd>{{ badge(c.status) }}</dd><dt>Customs</dt><dd>{{ badge(c.customs_status) }}</dd>
+<dt>Yard</dt><dd>{{ c.warehouse.name if c.warehouse else '—' }}</dd><dt>Vessel</dt><dd>{{ c.ship.name if c.ship else '—' }}</dd>
+<dt>Vehicle</dt><dd class="mono">{{ c.vehicle.plate if c.vehicle else '—' }}</dd><dt>Size · gross</dt><dd>{{ c.size }} · {{ c.gross_weight_kg|num }} kg</dd>
+{% if c.order %}<dt>Order</dt><dd><a href="/admin/orders/{{ c.order.id }}">{{ c.order.order_no }}</a> · {{ c.order.goods }}</dd>
+<dt>Route</dt><dd>{{ c.order.shipper.name }} → {{ c.order.consignee.name }}</dd>{% endif %}
+</dl></div>
+<div class="card"><h2>History</h2><ul class="feed">
+{% for m in moves %}<li><time>{{ m.at|dt }}</time><span>{{ 'Into' if m.direction=='in' else 'Out of' }} {{ m.warehouse.name }} <span class="muted">· {{ m.reference }}</span></span></li>{% endfor %}
+{% for g in gates %}<li><time>{{ g.at|dt }}</time><span>Gate-{{ g.direction }} at {{ g.port.island }} on <span class="mono">{{ g.vehicle.plate }}</span></span></li>{% endfor %}
+{% if not moves and not gates %}<li class="empty">Still at the factory.</li>{% endif %}
+</ul></div></div>
+{% endblock %}

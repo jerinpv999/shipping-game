@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, status_form %}
+{% block title %}Industries{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Registry</span><h1>Industry registration</h1><p>Factories and distribution centres that ship or receive containers. Only approved industries can book orders.</p></div></div>
+{% if can(user,'registry') %}
+<div class="card" style="margin-bottom:14px"><h2>Register an industry</h2>
+<form class="form" method="post" action="/admin/industries">
+  <label for="name">Company name<input id="name" name="name" required></label>
+  <label for="sector">Sector<select id="sector" name="sector"><option>Manufacturing</option><option>Food processing</option><option>Distribution</option><option>Agriculture</option><option>Construction</option></select></label>
+  <label for="goods">Main goods<input id="goods" name="goods" required placeholder="Electronics"></label>
+  <label for="hs_code">HS code<input id="hs_code" name="hs_code" pattern="\d{4,8}" placeholder="8517" required></label>
+  <label for="port_id">Island / port<select id="port_id" name="port_id">{% for p in ports %}<option value="{{ p.id }}">{{ p.island }}</option>{% endfor %}</select></label>
+  <label for="contact">Logistics contact<input id="contact" name="contact" type="email"></label>
+  <button>Register industry</button>
+</form>
+<p class="muted" style="font-size:12px;margin:10px 0 0">Import duty is assessed from the HS chapter, e.g. 85 electronics {{ '%.1f'|format(DUTY_BY_CHAPTER['85'][0]*100) }}%, 61 apparel {{ '%.0f'|format(DUTY_BY_CHAPTER['61'][0]*100) }}%, 94 furniture {{ '%.0f'|format(DUTY_BY_CHAPTER['94'][0]*100) }}%. Other chapters: 6%.</p>
+</div>{% endif %}
+<div class="tablewrap"><table>
+<thead><tr><th>Reg. no.</th><th>Company</th><th>Goods · HS</th><th>Island</th><th>Status</th><th>Live in game</th><th>Actions</th></tr></thead>
+<tbody>{% for i in industries %}
+<tr>
+  <td class="mono">{{ i.reg_no }}</td>
+  <td><b>{{ i.name }}</b><div class="muted" style="font-size:12px">{{ i.sector }} · {{ i.contact }}</div></td>
+  <td>{{ i.goods }} <span class="mono muted">{{ i.hs_code }}</span></td>
+  <td>{{ i.port.island }}</td>
+  <td>{{ badge(i.status) }}</td>
+  <td>{% if i.live_status %}{{ badge(i.live_status) }}<div class="muted" style="font-size:12px">{{ i.live_ready|int }} ready to ship · {{ i.live_stock|round(0)|int }} to unpack</div>{% else %}<span class="muted">—</span>{% endif %}</td>
+  <td>{% if can(user,'registry') %}{{ status_form('/admin/industries/%d/status'|format(i.id), i.status, ['pending','approved','suspended']) }}{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>
+{% endblock %}

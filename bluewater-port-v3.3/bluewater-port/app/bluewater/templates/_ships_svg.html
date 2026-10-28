@@ -1,0 +1,21 @@
+{% macro silhouette(kind) -%}
+<svg viewBox="0 0 240 70" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+{% if kind == 'container' %}
+  <path d="M10 44 L230 44 L218 62 L26 62 Z" fill="currentColor" fill-opacity=".08"/>
+  {% for x in range(30, 170, 22) %}<rect x="{{ x }}" y="26" width="20" height="18" fill="currentColor" fill-opacity="{{ [0.15,0.3,0.45][loop.index0 % 3] }}"/>{% endfor %}
+  <rect x="180" y="14" width="26" height="30"/><rect x="196" y="6" width="6" height="8"/>
+{% elif kind == 'crude' %}
+  <path d="M10 42 L230 42 L218 62 L24 62 Z" fill="currentColor" fill-opacity=".08"/>
+  <path d="M28 38 H172"/><path d="M28 34 H172"/><rect x="92" y="28" width="16" height="10"/>
+  <rect x="182" y="14" width="26" height="28"/><rect x="198" y="6" width="6" height="8"/>
+{% elif kind == 'lng' %}
+  <path d="M10 44 L230 44 L218 62 L26 62 Z" fill="currentColor" fill-opacity=".08"/>
+  {% for x in [46, 84, 122, 160] %}<path d="M{{ x - 17 }} 44 A17 17 0 0 1 {{ x + 17 }} 44" fill="currentColor" fill-opacity=".12"/>{% endfor %}
+  <rect x="186" y="14" width="24" height="30"/>
+{% else %}
+  <rect x="14" y="22" width="26" height="26" fill="currentColor" fill-opacity=".2"/>
+  <rect x="44" y="20" width="84" height="26" fill="currentColor" fill-opacity=".12"/><rect x="134" y="20" width="84" height="26" fill="currentColor" fill-opacity=".12"/>
+  <path d="M14 50 H218"/>{% for x in [24, 60, 112, 150, 202] %}<circle cx="{{ x }}" cy="56" r="6"/>{% endfor %}
+{% endif %}
+</svg>
+{%- endmacro %}

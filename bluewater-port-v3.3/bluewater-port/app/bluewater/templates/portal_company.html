@@ -1,0 +1,16 @@
+{% extends "portal_base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Company{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">{{ company.reg_no }}</span><h1>{{ company.name }}</h1><p>Registered {{ company.created_at|dt }} · {{ badge(company.status) }}</p></div></div>
+<div class="grid g2">
+<form class="card stack" method="post" action="/portal/company"><h2>Company details</h2>
+  <label for="company_type">What you do<select id="company_type" name="company_type">{% for k, v in [("both","Ships and road haulage"),("shipping_line","Shipping line"),("haulier","Road haulier")] %}<option value="{{ k }}" {{ 'selected' if company.company_type==k }}>{{ v }}</option>{% endfor %}</select></label>
+  <label for="country">Country<input id="country" name="country" value="{{ company.country }}"></label>
+  <label for="contact_email">Contact email<input id="contact_email" name="contact_email" type="email" value="{{ company.contact_email }}"></label>
+  <label for="phone">Phone<input id="phone" name="phone" value="{{ company.phone }}"></label>
+  <button>Save</button>
+</form>
+<div class="card"><h2>Team</h2><div class="tablewrap"><table><thead><tr><th>User</th><th>Name</th><th>Email</th></tr></thead><tbody>
+{% for u in company.users %}<tr><td class="mono">{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.email }}</td></tr>{% endfor %}</tbody></table></div></div>
+</div>
+{% endblock %}

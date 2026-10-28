@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Gate{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Gate control</span><h1>Gate in / out · {{ port.island }}</h1><p>Exports come in from factories; cleared imports go out to consignees. Every movement updates the yard and the container's history.</p></div>
+<div class="tabs" style="margin:0">{% for p in ports %}<a href="?port_id={{ p.id }}" class="{{ 'on' if p.id==port.id }}">{{ p.island }}</a>{% endfor %}</div></div>
+<div class="grid g2">
+<div class="card"><h2>Gate-in · export delivery</h2>
+{% if can(user,'gate') %}<form method="post" action="/admin/gate" class="stack">
+  <input type="hidden" name="port_id" value="{{ port.id }}"><input type="hidden" name="direction" value="in">
+  <label for="plate_in">Vehicle<select id="plate_in" name="plate">{% for v in vehicles if not v.inside_port_id %}<option>{{ v.plate }}</option>{% endfor %}</select></label>
+  <div><span class="eyebrow">Containers on the trailers ({{ waiting_in|length }} waiting at factories)</span>
+  <div class="checks" style="margin-top:6px">{% for c in waiting_in %}<label><input type="checkbox" name="containers" value="{{ c.number }}">{{ c.number }} <span class="muted">{{ c.order.shipper.name }}</span></label>{% else %}<span class="muted">No booked exports waiting. A vehicle can still enter empty.</span>{% endfor %}</div></div>
+  <label for="purpose_in">Note<input id="purpose_in" name="purpose" placeholder="Optional"></label>
+  <button>Record gate-in</button>
+</form>{% else %}<p class="muted">Only gate clerks can record movements.</p>{% endif %}</div>
+<div class="card"><h2>Gate-out · import delivery</h2>
+{% if can(user,'gate') %}<form method="post" action="/admin/gate" class="stack">
+  <input type="hidden" name="port_id" value="{{ port.id }}"><input type="hidden" name="direction" value="out">
+  <label for="plate_out">Vehicle inside the port<select id="plate_out" name="plate">{% for v in inside %}<option>{{ v.plate }}</option>{% else %}<option value="">No vehicles inside</option>{% endfor %}</select></label>
+  <div><span class="eyebrow">Customs-cleared imports ({{ ready_out|length }})</span>
+  <div class="checks" style="margin-top:6px">{% for c in ready_out %}<label><input type="checkbox" name="containers" value="{{ c.number }}">{{ c.number }} <span class="muted">→ {{ c.order.consignee.name }}</span></label>{% else %}<span class="muted">Nothing cleared for release. Vehicles can leave empty.</span>{% endfor %}</div></div>
+  <label for="purpose_out">Note<input id="purpose_out" name="purpose" placeholder="Optional"></label>
+  <button>Record gate-out</button>
+</form>{% endif %}</div>
+</div>
+<div class="card" style="margin-top:14px"><h2>Gate log · {{ port.island }}</h2>
+<div class="tablewrap"><table><thead><tr><th>Time</th><th>Direction</th><th>Vehicle</th><th class="num">Boxes</th><th>Containers</th><th>Purpose</th><th>Clerk</th></tr></thead>
+<tbody>{% for g in txs %}<tr><td>{{ g.at|dt }}</td><td>{{ badge('in' if g.direction=='in' else 'departed', 'In' if g.direction=='in' else 'Out') }}</td><td class="mono">{{ g.vehicle.plate }}</td><td class="num">{{ g.container_count }}</td>
+<td class="mono" style="font-size:12px">{% for n in g.containers.split(',') if n %}<a href="/admin/containers/{{ n }}">{{ n }}</a> {% endfor %}</td><td>{{ g.purpose }}</td><td class="muted">{{ g.clerk }}{% if g.source=='game' %} · game{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No gate movements yet.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

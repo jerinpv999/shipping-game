@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Register your company · Bluewater Port</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body><div class="login"><div class="card" style="width:min(640px,100%)">
+  <span class="eyebrow">Company portal</span>
+  <h1>Register your company</h1>
+  <p class="muted" style="margin:0 0 18px">Every new company starts with {{ OPENING_BALANCE|money }} to buy ships and road vehicles. The port authority reviews each registration before you can take on cargo.</p>
+  {% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.msg }}</div>{% endfor %}
+  <form method="post" action="/portal/register" class="stack">
+    <span class="eyebrow">Company</span>
+    <div class="form">
+      <label for="company_name">Company name<input id="company_name" name="company_name" value="{{ form.company_name or '' }}" required></label>
+      <label for="company_type">What you do<select id="company_type" name="company_type">
+        {% for k, v in [("both","Ships and road haulage"),("shipping_line","Shipping line (ships only)"),("haulier","Road haulier (vehicles only)")] %}<option value="{{ k }}" {{ 'selected' if form.company_type == k }}>{{ v }}</option>{% endfor %}</select></label>
+      <label for="country">Country<input id="country" name="country" value="{{ form.country or '' }}"></label>
+      <label for="phone">Phone<input id="phone" name="phone" value="{{ form.phone or '' }}"></label>
+    </div>
+    <span class="eyebrow">Your account</span>
+    <div class="form">
+      <label for="full_name">Your name<input id="full_name" name="full_name" value="{{ form.full_name or '' }}" autocomplete="name" required></label>
+      <label for="email">Email<input id="email" name="email" type="email" value="{{ form.email or '' }}" autocomplete="email" required></label>
+      <label for="username">Username<input id="username" name="username" value="{{ form.username or '' }}" autocomplete="username" minlength="3" required></label>
+      <label for="password">Password (8+ characters)<input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+    </div>
+    <button>Create company account</button>
+  </form>
+  <p style="margin:16px 0 0">Already registered? <a href="/portal/login">Sign in</a></p>
+</div></div></body></html>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}{{ o.order_no }}{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow"><a href="/admin/orders">Supply orders</a></span><h1>{{ o.order_no }} · {{ o.goods }}</h1><p>{{ o.shipper.name }} ({{ o.origin_port.island }}) → {{ o.consignee.name }} ({{ o.destination_port.island }})</p></div>{{ badge(o.status) }}</div>
+{% set idx = ORDER_FLOW.index(o.status) if o.status in ORDER_FLOW else -1 %}
+<ol class="steps" style="margin-bottom:14px">{% for st in ORDER_FLOW %}<li class="{{ 'done' if loop.index0 < idx else ('now' if loop.index0 == idx) }}">{{ ORDER_LABELS[st] }}</li>{% endfor %}</ol>
+<div class="grid g2">
+<div class="stack">
+<div class="card"><h2>Next action</h2>
+{% set st = o.status %}{% set boxes = o.containers %}
+{% if st == 'draft' %}<p>Both industries are approved, so the order can be confirmed.</p><form method="post" action="/admin/orders/{{ o.id }}/action"><input type="hidden" name="action" value="confirm"><button>Confirm order</button></form>
+{% elif st == 'confirmed' %}<p>Stuff {{ o.containers_planned }} container(s) at {{ o.shipper.name }}. Numbers are allocated automatically.</p><form method="post" action="/admin/orders/{{ o.id }}/action"><input type="hidden" name="action" value="stuff"><button>Stuff containers</button></form>
+{% elif st == 'stuffed' %}<p>Containers are waiting at the factory. Record a <a href="/admin/gate?port_id={{ o.origin_port_id }}">gate-in at {{ o.origin_port.island }}</a> when the road train arrives.</p>
+{% elif st == 'at_origin_yard' %}<p>All containers are in the outbound yard. Submit the export declaration.</p><form method="post" action="/admin/orders/{{ o.id }}/action"><input type="hidden" name="action" value="export"><button>Submit export declaration</button></form>
+{% elif st in ['export_customs','import_customs','customs_held'] %}<p>Waiting for a customs officer. See the declaration below.</p>
+{% elif st == 'export_cleared' %}
+  {% if ships_here %}<form class="inline" method="post" action="/admin/orders/{{ o.id }}/action"><input type="hidden" name="action" value="load"><select name="ship_id" aria-label="Vessel">{% for s in ships_here %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select><button>Load on vessel</button></form>
+  {% else %}<p>No approved container ship is alongside {{ o.origin_port.island }}. <a href="/admin/ships">Berth a ship</a> first.</p>{% endif %}
+{% elif st == 'shipped' %}<p>On board <b>{{ o.ship.name }}</b>. When it is berthed at {{ o.destination_port.island }}, discharge the containers.</p>
+  <form method="post" action="/admin/orders/{{ o.id }}/action"><input type="hidden" name="action" value="discharge"><button>Discharge at {{ o.destination_port.island }}</button></form>
+{% elif st == 'import_cleared' %}<p>Import cleared. Record a <a href="/admin/gate?port_id={{ o.destination_port_id }}">gate-out at {{ o.destination_port.island }}</a> for each road train.</p>
+{% elif st == 'out_for_delivery' %}<p>On the road to {{ o.consignee.name }}.</p><form method="post" action="/admin/orders/{{ o.id }}/action"><input type="hidden" name="action" value="deliver"><button class="ok">Confirm delivery</button></form>
+{% elif st == 'delivered' %}<p>Delivered to {{ o.consignee.name }}. Nothing left to do.</p>
+{% elif st == 'customs_rejected' %}<p>Customs rejected this shipment. Containers are held.</p>{% endif %}
+</div>
+<div class="card"><h2>Containers</h2>
+<div class="tablewrap"><table><thead><tr><th>Number</th><th>Location</th><th>Customs</th></tr></thead><tbody>
+{% for c in boxes %}<tr><td class="mono"><a href="/admin/containers/{{ c.number }}">{{ c.number }}</a></td><td>{{ badge(c.status) }}</td><td>{{ badge(c.customs_status) }}</td></tr>{% else %}<tr><td colspan="3" class="empty">Not stuffed yet.</td></tr>{% endfor %}
+</tbody></table></div></div>
+</div>
+<div class="stack">
+<div class="card"><h2>Shipment</h2><dl class="facts">
+<dt>Goods</dt><dd>{{ o.goods }} · HS {{ o.hs_code }}</dd><dt>Boxes</dt><dd>{{ o.containers_planned }}</dd>
+<dt>Declared value</dt><dd>{{ (o.value_per_container * o.containers_planned)|money }}</dd><dt>Vessel</dt><dd>{{ o.ship.name if o.ship else '—' }}</dd>
+<dt>Sea booking</dt><dd>{% if o.sea_request %}<span class="mono">{{ o.sea_request.ref }}</span> · {{ o.sea_request.status.replace('_',' ') }}{% if o.sea_request.company %} · {{ o.sea_request.company.name }}{% endif %}{% elif o.status == 'export_cleared' %}Waiting for consolidation on {{ o.origin_port.island }} → {{ o.destination_port.island }}{% else %}—{% endif %}</dd>
+<dt>Created</dt><dd>{{ o.created_at|dt }}</dd></dl></div>
+<div class="card"><h2>Customs declarations</h2>
+{% for d in decls %}<p style="margin:0 0 6px"><a class="mono" href="/admin/customs/{{ d.id }}">{{ d.decl_no }}</a> {{ d.decl_type }} {{ badge(d.status) }} <span class="muted">duty {{ d.duty_amount|money }}</span></p>{% else %}<p class="muted">None yet.</p>{% endfor %}</div>
+<div class="card"><h2>Order log</h2><ul class="feed">{% for a in log %}<li><time>{{ a.at|dt }}</time><span><b>{{ a.actor }}</b> {{ a.action }} <span class="muted">{{ a.detail }}</span></span></li>{% endfor %}</ul></div>
+</div></div>
+{% endblock %}

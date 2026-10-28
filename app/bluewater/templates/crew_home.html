@@ -1,0 +1,38 @@
+{% extends "crew_base.html" %}{% from "_macros.html" import badge %}{% from "_ships_svg.html" import silhouette %}
+{% block title %}My career{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">{{ user.licence or 'Seafarer' }} · {{ user.experience_years }} years at sea</span><h1>Hello, {{ user.full_name.split(' ')[0] }}</h1>
+<p>{% if member %}You work for <b>{{ member.company.name }}</b> as {{ POSITIONS.get(member.position, member.position)|lower }}.{% else %}Apply to a shipping company below to get a ship to command.{% endif %}</p></div>
+{% if ships %}<a class="btn" href="/game">Sail {{ ships[0].name }} in 3D</a>{% endif %}</div>
+{% if member %}
+<div class="card" style="margin-bottom:14px"><h2>Your command</h2>
+{% if member.ship %}
+  <div class="crew-ship">{{ silhouette(member.ship.ship_type) }}
+  <dl class="facts"><dt>Ship</dt><dd>{{ member.ship.name }} <span class="mono muted">IMO {{ member.ship.imo }}</span></dd><dt>Type</dt><dd>{{ member.ship.model or member.ship.ship_type }} · {{ member.ship.capacity|num }} {{ member.ship.capacity_unit }}</dd>
+  <dt>Registration</dt><dd>{{ badge(member.ship.status) }}</dd><dt>Last seen</dt><dd>{{ member.ship.game_seen_at|dt }}</dd></dl></div>
+  {% if member.ship.status != 'approved' %}<p class="notice" style="margin-top:12px">The port authority hasn't approved this ship's registration yet, so it can't sail.</p>{% endif %}
+{% else %}<p class="muted">{{ member.company.name }} hasn't assigned you a ship yet.</p>{% endif %}
+<form method="post" action="/crew/resign" class="resign" style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <label style="flex-direction:row;align-items:center;gap:6px;font-weight:500;color:var(--text)"><input type="checkbox" name="confirm" value="yes" required> I want to resign from {{ member.company.name }} and give up {{ member.ship.name if member.ship else 'my position' }}</label>
+  <button class="small bad">Resign</button></form>
+<p class="muted" style="font-size:12px;margin:8px 0 0">Want to move? Apply to another company below. If it hires you, you leave {{ member.company.name }} automatically.</p>
+</div>
+{% endif %}
+<div class="grid g2">
+<div class="card"><h2>{{ 'Other companies hiring' if member else 'Companies hiring' }}</h2>
+{% for c in companies if not member or c.id != member.company_id %}<div style="padding:10px 0;border-top:1px solid var(--line)">
+  <div style="display:flex;justify-content:space-between;gap:10px"><b>{{ c.name }}</b><span class="muted">{{ c.ships|length }} ship{{ 's' if c.ships|length != 1 }} · {{ c.country }}</span></div>
+  {% if c.id in pending %}<span class="muted" style="font-size:13px">Application pending</span>
+  {% else %}<form class="form" method="post" action="/crew/apply" style="margin-top:6px"><input type="hidden" name="company_id" value="{{ c.id }}">
+    <label for="pos-{{ c.id }}">Position<select id="pos-{{ c.id }}" name="position">{% for k, v in POSITIONS.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label for="msg-{{ c.id }}">Message<input id="msg-{{ c.id }}" name="message" placeholder="Why should they hire you?"></label>
+    <button class="small">{{ 'Apply to transfer' if member else 'Apply' }}</button></form>{% endif %}
+</div>{% else %}<p class="empty">{{ "No other companies are hiring right now." if member else "No approved companies yet." }}</p>{% endfor %}
+</div>
+<div class="card"><h2>My applications</h2>
+<div class="tablewrap"><table><thead><tr><th>Company</th><th>Position</th><th>Status</th><th></th></tr></thead><tbody>
+{% for a in apps %}<tr><td>{{ a.company.name }}</td><td>{{ POSITIONS.get(a.position, a.position) }}</td><td>{{ badge('approved' if a.status=='accepted' else a.status, a.status|capitalize) }}</td>
+<td>{% if a.status == 'pending' %}<form class="inline" method="post" action="/crew/withdraw/{{ a.id }}"><button class="small ghost">Withdraw</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="4" class="empty">No applications yet.</td></tr>{% endfor %}</tbody></table></div></div>
+</div>
+{% endblock %}

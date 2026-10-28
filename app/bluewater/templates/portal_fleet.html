@@ -1,0 +1,24 @@
+{% extends "portal_base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Fleet{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Fleet</span><h1>Your ships and vehicles</h1><p>Pending assets are waiting for port-authority approval.</p></div><a class="btn" href="/portal/market">Buy more</a></div>
+<div class="card" style="margin-bottom:14px"><h2>Ships</h2>
+<div class="tablewrap"><table><thead><tr><th>Ship</th><th>IMO</th><th>Model</th><th class="num">Capacity</th><th>Registration</th><th>Insurance</th><th>Position</th><th>Current job</th></tr></thead><tbody>
+{% for s in (company.ships|rejectattr('status', 'equalto', 'lost')|list) + (company.ships|selectattr('status', 'equalto', 'lost')|sort(attribute='id', reverse=True)|list) %}{% set j = job_by_ship.get(s.id) %}<tr><td><b>{{ s.name }}</b></td><td class="mono">{{ s.imo }}</td><td>{{ s.model or s.ship_type }}</td><td class="num">{{ s.capacity|num }} {{ s.capacity_unit }}</td>
+<td>{{ badge(s.status, 'Lost at sea' if s.status == 'lost' else None) }}{% if s.lost_at %}<div class="muted" style="font-size:12px">{{ s.lost_at|dt }}</div>{% endif %}</td>
+<td>{% set p = policies.get(s.id) %}{% if p %}{{ badge('active', PLANS[p.plan].label) }}{% elif s.status == 'lost' %}{% set cl = claims_by_ship.get(s.id, []) %}{% for c in cl %}<div style="font-size:12px">{{ c.kind|capitalize }} claim {{ badge(c.status) }} {{ c.amount|money }}</div>{% else %}<span class="muted" style="font-size:12px">Uninsured · no payout</span>{% endfor %}{% else %}<a href="/portal/insurance">{{ badge('blocked', 'Uninsured') }}</a>{% endif %}</td>
+{% if s.status == 'lost' and s.replaced_by %}<td colspan="2"><span class="muted">Replaced by <b>{{ s.replaced_by }}</b></span></td>
+{% elif s.status == 'lost' %}<td colspan="2"><form method="post" action="/portal/fleet/{{ s.id }}/replace" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+  <input name="name" required value="{{ replacement_name(s) }}" aria-label="Name of the replacement" style="width:150px">
+  <select name="plan" aria-label="Insurance for the replacement"><option value="">No insurance</option>{% for key, pl in PLANS.items() %}<option value="{{ key }}" {{ 'selected' if key == 'standard' }}>{{ pl.label }}</option>{% endfor %}</select>
+  <button class="small">Replace · {{ s.price|money if s.price else 'same model' }}</button></form></td>
+{% else %}<td>{{ s.current_port.island if s.current_port else 'At sea' }}</td>
+<td>{% if j %}<span class="mono">{{ j.ref }}</span> {{ badge(j.status) }}<div class="muted" style="font-size:12px">{{ j.origin }} → {{ j.destination }}</div>{% else %}<span class="muted">Idle</span>{% endif %}</td>{% endif %}</tr>
+{% else %}<tr><td colspan="8" class="empty">No ships yet.</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="card"><h2>Road vehicles</h2>
+<div class="tablewrap"><table><thead><tr><th>Plate</th><th>Type</th><th class="num">Capacity</th><th>Gate clearance</th><th>Location</th><th>Current job</th></tr></thead><tbody>
+{% for v in company.vehicles %}{% set j = job_by_vehicle.get(v.id) %}<tr><td class="mono"><b>{{ v.plate }}</b></td><td>{{ v.vehicle_type.replace('_',' ')|capitalize }}</td><td class="num">{{ v.max_containers }} box{{ 'es' if v.max_containers > 1 }}</td>
+<td>{{ badge(v.status) }}</td><td>{{ ('Inside ' ~ v.inside_port.island) if v.inside_port else 'Outside the port' }}</td>
+<td>{% if j %}<span class="mono">{{ j.ref }}</span> {{ badge(j.status) }}<div class="muted" style="font-size:12px">{{ j.origin }} → {{ j.destination }}</div>{% else %}<span class="muted">Idle</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No vehicles yet.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Company portal{% endblock %} · Bluewater Port</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <div class="brand"><b>Bluewater <span>Port</span></b><small>{{ company.name }}</small></div>
+  <nav aria-label="Portal">
+    {% for href, label in [("/portal","Overview"),("/portal/requests","Transit board"),("/portal/market","Marketplace"),("/portal/fleet","Fleet"),("/portal/insurance","Insurance"),("/portal/crew","Crew"),("/portal/ledger","Ledger"),("/portal/company","Company")] %}
+    <a href="{{ href }}" class="{{ 'on' if path == href }}">{{ label }}</a>{% endfor %}
+    <a href="/game" class="play">Sail in 3D ↗</a>
+  </nav>
+  <div class="wallet"><small>Balance</small><b>{{ company.balance|money }}</b></div>
+  <a href="/portal/logout" style="color:var(--nav-text);font-size:13px">Sign out</a>
+</div></header>
+<div class="page">
+  {% if company.status == 'pending' %}<div class="notice">The port authority is reviewing <b>{{ company.name }}</b>. You can buy ships and vehicles now; you can accept transit requests once your company is approved.</div>{% endif %}
+  {% if company.status == 'suspended' %}<div class="notice">Your company is suspended. Contact the port authority.</div>{% endif %}
+  {% for f in flashes %}<div class="flash {{ f.kind }}" role="status">{{ f.msg }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</div>
+</body></html>

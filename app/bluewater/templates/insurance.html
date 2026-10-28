@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Insurance{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Companies</span><h1>Insurance claims</h1>
+<p>Claims are raised automatically when a company ship sinks in the game. Pay or reject them here. {{ UNDERWRITER }} pays any claim still undecided after 10 minutes.</p></div></div>
+<div class="card" style="margin-bottom:14px"><h2>Claims</h2>
+<div class="tablewrap"><table><thead><tr><th>Claim</th><th>Company</th><th>Ship</th><th>Cover</th><th>Cause</th><th class="num">Loss</th><th class="num">Payable</th><th>Status</th><th>Decision</th></tr></thead><tbody>
+{% for c in claims %}<tr><td class="mono">{{ c.ref }}<div class="muted" style="font-size:12px">{{ c.created_at|dt }}</div></td><td>{{ c.company.name }}</td><td>{{ c.ship.name }}{% if c.job_ref %}<div class="muted mono" style="font-size:12px">{{ c.job_ref }}</div>{% endif %}</td>
+<td>{{ c.kind|capitalize }}{% if c.policy %}<div class="muted" style="font-size:12px">{{ PLANS[c.policy.plan].label }}</div>{% endif %}</td><td>{{ c.cause|capitalize }}</td>
+<td class="num">{{ c.loss|money }}</td><td class="num"><b>{{ c.amount|money }}</b></td><td>{{ badge(c.status) }}{% if c.note %}<div class="muted" style="font-size:12px">{{ c.note }}</div>{% endif %}</td>
+<td>{% if c.status == 'under_review' %}<form class="inline" method="post" action="/admin/insurance/claims/{{ c.id }}" style="display:flex;gap:6px;flex-wrap:wrap">
+  <input name="note" placeholder="Note (optional)" aria-label="Note" style="min-width:120px"><button name="decision" value="pay" class="small ok">Pay</button><button name="decision" value="reject" class="small ghost">Reject</button></form>
+{% else %}<span class="muted" style="font-size:12px">{{ c.decided_by }} · {{ c.decided_at|dt }}</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="9" class="empty">No claims yet.</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="grid g2">
+<div class="card"><h2>Ships lost at sea</h2>
+<table><thead><tr><th>Ship</th><th>Company</th><th>Lost</th><th>Cause</th></tr></thead><tbody>
+{% for s in lost %}<tr><td><b>{{ s.name }}</b><div class="mono muted" style="font-size:12px">IMO {{ s.imo }}</div></td><td>{{ s.company.name if s.company else s.owner }}</td><td>{{ s.lost_at|dt }}</td><td>{{ s.live_status }}</td></tr>
+{% else %}<tr><td colspan="4" class="empty">None.</td></tr>{% endfor %}</tbody></table></div>
+<div class="card"><h2>Policies</h2>
+<div class="tablewrap"><table><thead><tr><th>Policy</th><th>Company</th><th>Ship</th><th>Plan</th><th>Until</th><th>Status</th></tr></thead><tbody>
+{% for p in policies %}<tr><td class="mono">{{ p.ref }}</td><td>{{ p.company.name }}</td><td>{{ p.ship.name }}</td><td>{{ PLANS[p.plan].label }}</td><td>{{ p.valid_until|dt }}</td><td>{{ badge(p.status) }}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No policies.</td></tr>{% endfor %}</tbody></table></div></div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Register as a seafarer · Bluewater Port</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body><div class="login"><div class="card" style="width:min(600px,100%)">
+  <span class="eyebrow">Seafarers</span>
+  <h1>Register as a seafarer</h1>
+  <p class="muted" style="margin:0 0 18px">Create your profile, apply to shipping companies, and once a company hires you and assigns a ship, sail it in the 3D game.</p>
+  {% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.msg }}</div>{% endfor %}
+  <form method="post" action="/crew/register" class="stack">
+    <div class="form">
+      <label for="full_name">Your name<input id="full_name" name="full_name" value="{{ form.full_name or '' }}" autocomplete="name" required></label>
+      <label for="email">Email<input id="email" name="email" type="email" value="{{ form.email or '' }}" autocomplete="email" required></label>
+      <label for="licence">Certificate of competency<select id="licence" name="licence">{% for l in LICENCES %}<option {{ 'selected' if form.licence == l }}>{{ l }}</option>{% endfor %}</select></label>
+      <label for="experience_years">Years at sea<input id="experience_years" name="experience_years" type="number" min="0" max="60" value="{{ form.experience_years or 0 }}"></label>
+      <label for="username">Username<input id="username" name="username" value="{{ form.username or '' }}" autocomplete="username" minlength="3" required></label>
+      <label for="password">Password (8+ characters)<input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+    </div>
+    <button>Create seafarer account</button>
+  </form>
+  <p style="margin:16px 0 0">Already registered? <a href="/portal/login">Sign in</a></p>
+</div></div></body></html>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, status_form %}
+{% block title %}Ships{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Registry</span><h1>Ship registration</h1><p>Vessels must be approved before they can berth at a terminal.</p></div></div>
+{% if can(user,'registry') %}
+<div class="card" style="margin-bottom:14px"><h2>Register a vessel</h2>
+<form class="form" method="post" action="/admin/ships">
+  <label for="imo">IMO number<input id="imo" name="imo" pattern="\d{7}" placeholder="9074729" required></label>
+  <label for="name">Vessel name<input id="name" name="name" required></label>
+  <label for="ship_type">Type<select id="ship_type" name="ship_type"><option value="container">Container ship</option><option value="crude">Crude tanker</option><option value="lng">LNG carrier</option></select></label>
+  <label for="capacity">Capacity (TEU / bbl / m³)<input id="capacity" name="capacity" type="number" min="1" step="any" required></label>
+  <label for="flag">Flag state<input id="flag" name="flag"></label>
+  <label for="owner">Owner / operator<input id="owner" name="owner"></label>
+  <button>Register vessel</button>
+</form></div>{% endif %}
+<div class="tablewrap"><table>
+<thead><tr><th>IMO</th><th>Vessel</th><th>Type</th><th>Flag · owner</th><th class="num">Capacity</th><th>Status</th><th>Position</th><th>Actions</th></tr></thead>
+<tbody>{% for s in ships %}
+<tr>
+  <td class="mono">{{ s.imo }}</td>
+  <td><b>{{ s.name }}</b>{% if s.live_status %}<div class="muted" style="font-size:12px">Game: {{ s.live_status }}</div>{% endif %}</td>
+  <td>{{ {'container':'Container','crude':'Crude tanker','lng':'LNG carrier'}[s.ship_type] }}</td>
+  <td>{{ s.flag }}<div class="muted" style="font-size:12px">{{ s.owner }}</div></td>
+  <td class="num">{{ s.capacity|num }} {{ s.capacity_unit }}{% if s.ship_type=='container' %}<div class="muted" style="font-size:12px">{{ on_board.get(s.id,0) }} booked on board</div>{% endif %}</td>
+  <td>{{ badge(s.status) }}</td>
+  <td>{% if s.current_port %}{{ badge('berthed', 'Alongside') }}<div style="font-size:12px">{{ s.current_port.name }}</div>{% else %}<span class="muted">At sea</span>{% endif %}</td>
+  <td><div class="stack" style="gap:6px">
+    {% if can(user,'registry') %}{{ status_form('/admin/ships/%d/status'|format(s.id), s.status, ['pending','approved','suspended']) }}{% endif %}
+    {% if can(user,'vessel') and s.status=='approved' %}
+      {% if s.current_port %}<form class="inline" method="post" action="/admin/ships/{{ s.id }}/depart"><button class="small ghost">Record departure</button></form>
+      {% else %}<form class="inline" method="post" action="/admin/ships/{{ s.id }}/berth"><select name="port_id" aria-label="Berth at">{% for p in ports if p.terminal_type == s.ship_type %}<option value="{{ p.id }}">{{ p.island }}</option>{% endfor %}</select><button class="small">Berth</button></form>{% endif %}
+    {% endif %}
+  </div></td>
+</tr>{% endfor %}</tbody></table></div>
+{% endblock %}

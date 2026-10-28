@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Transit requests{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Company portal</span><h1>Transit requests</h1><p>Paid cargo jobs on the company board. Road and sea legs are posted automatically when containers are stuffed and when customs clears a shipment. You can also post charters by hand.</p></div>
+{% if can(user,'transit') %}<form method="post" action="/admin/transit/bulk"><button class="ghost">Post crude & LNG charters</button></form>{% endif %}</div>
+{% if can(user,'transit') %}
+<div class="card" style="margin-bottom:14px"><h2>Post a request</h2>
+<form class="form" method="post" action="/admin/transit">
+  <label for="mode">Mode<select id="mode" name="mode"><option value="sea">Sea</option><option value="road">Road</option></select></label>
+  <label for="cargo_type">Cargo<select id="cargo_type" name="cargo_type"><option value="container">Containers</option><option value="crude">Crude oil (sea)</option><option value="lng">LNG (sea)</option></select></label>
+  <label for="origin">From<input id="origin" name="origin" list="places" required></label>
+  <label for="destination">To<input id="destination" name="destination" list="places" required></label>
+  <datalist id="places">{% for p in ports %}<option value="{{ p.name }}">{% endfor %}{% for i in industries %}<option value="{{ i.name }}">{% endfor %}</datalist>
+  <label for="quantity">Quantity (boxes / bbl / m³)<input id="quantity" name="quantity" type="number" min="1" step="any" required></label>
+  <label for="rate">Freight payout (USD)<input id="rate" name="rate" type="number" min="1" step="any" required></label>
+  <label for="days">Days to deliver<input id="days" name="days" type="number" min="1" value="3"></label>
+  <label for="description">Description<input id="description" name="description"></label>
+  <button>Post request</button>
+</form></div>{% endif %}
+<div class="card" style="margin-bottom:14px"><h2>Consolidation · export-cleared orders waiting for a ship</h2>
+<p class="muted" style="margin:-4px 0 10px">Industries ask the port to ship goods. Once customs clears an order it joins its route; the port books one ship for the whole route when it reaches {{ min_boxes }} boxes, or when you book now.</p>
+{% for L in lanes %}<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap">
+  <div><b>{{ L.origin.island }} → {{ L.destination.island }}</b> · {{ L.boxes }} box{{ 'es' if L.boxes != 1 }} from {{ L.orders|length }} order{{ 's' if L.orders|length != 1 }}
+  <div class="muted" style="font-size:12px">{% for o in L.orders %}<a href="/admin/orders/{{ o.id }}">{{ o.order_no }}</a> {{ o.shipper.name }} ({{ o.goods }}){{ ', ' if not loop.last }}{% endfor %}</div></div>
+  {% if can(user,'transit') %}<form class="inline" method="post" action="/admin/transit/consolidate"><input type="hidden" name="origin_id" value="{{ L.origin.id }}"><input type="hidden" name="destination_id" value="{{ L.destination.id }}"><button class="small">Book ship now</button></form>{% endif %}
+</div>{% else %}<p class="empty" style="padding:6px">No cleared orders are waiting for a ship.</p>{% endfor %}
+</div>
+<div class="tabs"><a href="/admin/transit" class="{{ 'on' if not status }}">All<span>{{ counts.values()|sum }}</span></a>{% for st in ['open','accepted','in_transit','delivered','cancelled'] %}<a href="?status={{ st }}" class="{{ 'on' if status==st }}">{{ st.replace('_',' ')|capitalize }}<span>{{ counts.get(st,0) }}</span></a>{% endfor %}</div>
+<div class="tablewrap"><table><thead><tr><th>Request</th><th>Mode</th><th>Route</th><th class="num">Cargo</th><th class="num">Freight</th><th>Deadline</th><th>Company · asset</th><th>Status</th><th></th></tr></thead><tbody>
+{% for r in rows %}<tr><td class="mono">{{ r.ref }}{% if r.order_refs %}<div style="font-size:12px">{{ r.order_refs }}</div>{% elif r.order %}<div style="font-size:12px"><a href="/admin/orders/{{ r.order.id }}">{{ r.order.order_no }}</a></div>{% endif %}</td><td>{{ r.mode|capitalize }} · {{ r.cargo_type }}</td>
+<td>{{ r.origin }} → {{ r.destination }}<div class="muted" style="font-size:12px">{{ r.description }}</div></td><td class="num">{{ r|qty }}</td><td class="num">{{ r.rate|money }}</td>
+<td class="muted">{{ r.deadline|dt }}</td><td>{% if r.company %}<a href="/admin/companies/{{ r.company.id }}">{{ r.company.name }}</a><div class="muted" style="font-size:12px">{{ r.ship.name if r.ship else (r.vehicle.plate if r.vehicle else '') }}</div>{% else %}<span class="muted">—</span>{% endif %}</td>
+<td>{{ badge('expired' if is_expired(r) else r.status, 'Expired' if is_expired(r) else None) }}</td>
+<td>{% if can(user,'transit') and r.status in ['open','accepted'] %}<form class="inline" method="post" action="/admin/transit/{{ r.id }}/cancel"><button class="small ghost">Cancel</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="9" class="empty">No requests.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

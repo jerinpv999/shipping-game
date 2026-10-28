@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, status_form %}
+{% block title %}Vehicles{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Registry</span><h1>Vehicle registration</h1><p>Road trains and trucks allowed through the port gates. Blocked vehicles are refused at the gate.</p></div></div>
+{% if can(user,'registry') %}
+<div class="card" style="margin-bottom:14px"><h2>Register a vehicle</h2>
+<form class="form" method="post" action="/admin/vehicles">
+  <label for="plate">Plate<input id="plate" name="plate" required placeholder="KL-01-AB-1234"></label>
+  <label for="vehicle_type">Type<select id="vehicle_type" name="vehicle_type"><option value="road_train">Road train (2 trailers)</option><option value="truck">Container truck</option><option value="tanker_truck">Tanker truck</option></select></label>
+  <label for="haulier">Haulier<input id="haulier" name="haulier"></label>
+  <label for="trailers">Trailers<input id="trailers" name="trailers" type="number" min="0" max="4" value="2"></label>
+  <label for="max_containers">Max containers<input id="max_containers" name="max_containers" type="number" min="0" max="4" value="2"></label>
+  <button>Register vehicle</button>
+</form></div>{% endif %}
+<div class="tablewrap"><table>
+<thead><tr><th>Plate</th><th>Type</th><th>Haulier</th><th class="num">Capacity</th><th>Status</th><th>Location</th><th>Last gate event</th><th>Actions</th></tr></thead>
+<tbody>{% for v in vehicles %}{% set g = last.get(v.id) %}
+<tr>
+  <td class="mono"><b>{{ v.plate }}</b></td>
+  <td>{{ v.vehicle_type.replace('_',' ')|capitalize }}</td>
+  <td>{{ v.haulier }}</td>
+  <td class="num">{{ v.max_containers }} box{{ 'es' if v.max_containers != 1 }} · {{ v.trailers }} trailer{{ 's' if v.trailers != 1 }}</td>
+  <td>{{ badge(v.status) }}</td>
+  <td>{% if v.inside_port %}{{ badge('in', 'Inside') }} {{ v.inside_port.island }}{% else %}<span class="muted">Outside</span>{% endif %}</td>
+  <td>{% if g %}<span class="muted">{{ g.at|dt }}</span> gate-{{ g.direction }} {{ g.port.island }}{% else %}<span class="muted">—</span>{% endif %}</td>
+  <td>{% if can(user,'registry') %}{{ status_form('/admin/vehicles/%d/status'|format(v.id), v.status, ['pending','active','blocked']) }}{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>
+{% endblock %}

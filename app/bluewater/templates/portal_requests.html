@@ -1,0 +1,39 @@
+{% extends "portal_base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Transit board{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Transit board</span><h1>Cargo transit requests</h1><p>Accept a job with one of your idle, approved assets, start it when loaded, and mark it delivered to get paid. The port keeps {{ '%.0f'|format(PORT_DUES*100) }}% in dues.</p></div></div>
+<div class="tabs">
+  <a href="/portal/requests" class="{{ 'on' if not mode and not cargo and not fit }}">All open</a>
+  <a href="?fit=1" class="{{ 'on' if fit }}">My fleet can carry</a>
+  <a href="?mode=sea" class="{{ 'on' if mode=='sea' and not cargo }}">Sea</a>
+  <a href="?mode=road" class="{{ 'on' if mode=='road' }}">Road</a>
+  <a href="?mode=sea&cargo=container" class="{{ 'on' if cargo=='container' }}">Containers</a>
+  <a href="?mode=sea&cargo=crude" class="{{ 'on' if cargo=='crude' }}">Crude</a>
+  <a href="?mode=sea&cargo=lng" class="{{ 'on' if cargo=='lng' }}">LNG</a>
+</div>
+<div class="stack" style="gap:10px">
+{% for r in rows %}{% set opts = options[r.id] %}
+<div class="card job">
+  <div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="mono muted">{{ r.ref }}</span>{{ badge(r.mode, 'Sea' if r.mode=='sea' else 'Road') }}<span class="badge b-mute">{{ {'container':'Containers','crude':'Crude oil','lng':'LNG'}[r.cargo_type] }}</span>{% if r.order_refs %}<span class="muted" style="font-size:12px">orders {{ r.order_refs }}</span>{% elif r.order %}<span class="muted" style="font-size:12px">order {{ r.order.order_no }}</span>{% endif %}</div>
+    <div class="route" style="margin-top:4px">{{ r.origin }}<span>→</span>{{ r.destination }}</div>
+    <div class="muted" style="font-size:13px">{{ r.description }} · {{ r|qty }} · deliver by {{ r.deadline|dt }}</div>
+  </div>
+  <div class="stack" style="gap:6px;align-items:flex-end">
+    <b class="money" style="font-size:18px">{{ r.rate|money }}</b>
+    {% if opts and company.status == 'approved' %}
+    <form class="inline" method="post" action="/portal/requests/{{ r.id }}/accept">
+      <select name="asset_id" aria-label="Assign">{% for a in opts %}<option value="{{ a.id }}">{{ a.name if r.mode=='sea' else a.plate }}</option>{% endfor %}</select>
+      <button>Accept</button></form>
+    {% else %}<span class="muted" style="font-size:12px">{{ 'Waiting for company approval' if company.status != 'approved' else ('No idle ' ~ ('ship' if r.mode=='sea' else 'vehicle') ~ ' can carry this') }}</span>{% endif %}
+  </div>
+</div>
+{% else %}<div class="card empty">No open requests match. New jobs appear when factories stuff containers and customs clears shipments.</div>{% endfor %}
+</div>
+<h2 style="font-size:17px;margin:24px 0 10px">My jobs</h2>
+<div class="tablewrap"><table><thead><tr><th>Request</th><th>Route</th><th class="num">Cargo</th><th>Assigned</th><th class="num">Freight</th><th>Status</th><th></th></tr></thead><tbody>
+{% for r in mine %}<tr><td class="mono">{{ r.ref }}</td><td>{{ r.origin }} → {{ r.destination }}</td><td class="num">{{ r|qty }}</td><td>{{ r.ship.name if r.ship else (r.vehicle.plate if r.vehicle else '') }}</td><td class="num money">{{ r.rate|money }}</td><td>{{ badge(r.status) }}</td>
+<td><div style="display:flex;gap:6px">{% if r.status=='accepted' %}<form class="inline" method="post" action="/portal/requests/{{ r.id }}/start"><button class="small">Start</button></form><form class="inline" method="post" action="/portal/requests/{{ r.id }}/release"><button class="small ghost">Hand back</button></form>
+{% elif r.status=='in_transit' %}<form class="inline" method="post" action="/portal/requests/{{ r.id }}/deliver"><button class="small ok">Mark delivered</button></form>{% endif %}</div></td></tr>
+{% else %}<tr><td colspan="7" class="empty">You haven't taken any jobs yet.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

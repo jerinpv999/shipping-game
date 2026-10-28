@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Supply orders{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Supply chain</span><h1>Supply orders</h1><p>Factory → road → origin yard → export customs → vessel → inbound yard → import customs → road → consignee.</p></div></div>
+{% if can(user,'orders') %}
+<div class="card" style="margin-bottom:14px"><h2>Book a shipment</h2>
+<form class="form" method="post" action="/admin/orders">
+  <label for="shipper_id">Shipper (exporter)<select id="shipper_id" name="shipper_id">{% for i in industries %}<option value="{{ i.id }}">{{ i.name }} · {{ i.port.island }}</option>{% endfor %}</select></label>
+  <label for="consignee_id">Consignee (importer)<select id="consignee_id" name="consignee_id">{% for i in industries %}<option value="{{ i.id }}" {{ 'selected' if loop.index == industries|length }}>{{ i.name }} · {{ i.port.island }}</option>{% endfor %}</select></label>
+  <label for="containers_planned">Containers<input id="containers_planned" name="containers_planned" type="number" min="1" max="40" value="2"></label>
+  <label for="value_per_container">Cargo value per box (USD)<input id="value_per_container" name="value_per_container" type="number" min="1" value="25000"></label>
+  <button>Create order</button>
+</form></div>{% endif %}
+<div class="tabs"><a href="/admin/orders" class="{{ 'on' if not status }}">All<span>{{ counts.values()|sum }}</span></a>{% for st in ORDER_FLOW + ['customs_held','customs_rejected'] %}{% if counts.get(st) %}<a href="?status={{ st }}" class="{{ 'on' if status==st }}">{{ ORDER_LABELS[st] }}<span>{{ counts[st] }}</span></a>{% endif %}{% endfor %}</div>
+<div class="tablewrap"><table>
+<thead><tr><th>Order</th><th>Shipper → consignee</th><th>Goods</th><th>Route</th><th class="num">Boxes</th><th class="num">Value</th><th>Stage</th><th>Updated</th></tr></thead>
+<tbody>{% for o in orders %}<tr>
+<td class="mono"><a href="/admin/orders/{{ o.id }}">{{ o.order_no }}</a></td><td>{{ o.shipper.name }} → {{ o.consignee.name }}</td>
+<td>{{ o.goods }} <span class="mono muted">{{ o.hs_code }}</span></td><td>{{ o.origin_port.island }} → {{ o.destination_port.island }}</td>
+<td class="num">{{ o.containers|length or o.containers_planned }}</td><td class="num">{{ (o.value_per_container * o.containers_planned)|money }}</td><td>{{ badge(o.status) }}</td><td class="muted">{{ o.updated_at|dt }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">No orders.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

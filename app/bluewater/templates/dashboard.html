@@ -1,0 +1,53 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, bar %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Port authority</span><h1>Operations dashboard</h1><p>Registry, yards, customs and gate activity across the six Bluewater terminals.</p></div>
+<a class="btn" href="/game" target="_blank" rel="noopener">Open 3D game</a></div>
+
+<div class="grid g4">
+  <div class="card kpi"><span>Vessels alongside</span><b>{{ d.in_port }}</b><span>of {{ d.ships }} registered ships</span>{% if d.ships_pending %}<small>{{ d.ships_pending }} awaiting approval</small>{% endif %}</div>
+  <div class="card kpi"><span>Customs queue</span><b>{{ d.customs_open }}</b><span>open declarations</span><small style="color:var(--ok)">{{ d.duty_collected|money }} duty assessed</small></div>
+  <div class="card kpi"><span>Gate movements (24 h)</span><b>{{ d.gate_today }}</b><span>{{ d.vehicles_inside }} of {{ d.vehicles }} vehicles inside a port</span></div>
+  <div class="card kpi"><span>Registered industries</span><b>{{ d.industries }}</b><span>shippers & consignees</span>{% if d.industries_pending %}<small>{{ d.industries_pending }} awaiting approval</small>{% endif %}</div>
+</div>
+
+<div class="grid g2" style="margin-top:14px">
+  <div class="card">
+    <h2>Warehouses & tank farms</h2>
+    <div class="stack">
+    {% for y in d.yards %}
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:10px"><a href="/admin/warehouses/{{ y.wh.id }}"><b>{{ y.wh.name }}</b></a>
+          <span class="muted">{% if y.wh.kind == 'container_yard' %}{{ y.booked.total }} booked · {{ y.live|num }} live / {{ y.wh.capacity|num }} boxes{% else %}{{ y.booked.total|num }} / {{ y.wh.capacity|num }} {{ y.wh.unit }}{% endif %}</span></div>
+        {{ bar(y.booked.pct if y.wh.kind != 'container_yard' else ((y.live / y.wh.capacity * 100) if y.live else y.booked.pct)) }}
+      </div>
+    {% endfor %}
+    </div>
+    <p class="muted" style="font-size:12px;margin:10px 0 0">Container yards show the live level reported by the 3D game when it is running, otherwise containers booked in the registry.</p>
+  </div>
+  <div class="card">
+    <h2>Supply orders by stage</h2>
+    <div class="stack" style="gap:6px">
+    {% set total = d.orders_by_status.values()|sum or 1 %}
+    {% for st in ORDER_FLOW + ["customs_held","customs_rejected"] %}{% if d.orders_by_status.get(st) %}
+      <div style="display:grid;grid-template-columns:150px 1fr 30px;gap:10px;align-items:center">
+        <a href="/admin/orders?status={{ st }}">{{ ORDER_LABELS[st] }}</a>{{ bar(d.orders_by_status[st] / total * 100, 1000) }}<b class="num" style="text-align:right">{{ d.orders_by_status[st] }}</b>
+      </div>
+    {% endif %}{% endfor %}
+    {% if not d.orders_by_status %}<p class="empty">No orders yet.</p>{% endif %}
+    </div>
+    <h2 style="margin-top:16px">Containers by location</h2>
+    <div class="tabs">{% for st, label in CONTAINER_LABELS.items() %}<a href="/admin/containers?status={{ st }}">{{ label }}<span>{{ d.containers_by_status.get(st, 0) }}</span></a>{% endfor %}</div>
+  </div>
+</div>
+
+<div class="grid g2" style="margin-top:14px">
+  <div class="card"><h2>Recent activity</h2>
+    <ul class="feed">{% for a in d.recent_audit %}<li><time>{{ a.at|dt }}</time><span><b>{{ a.actor }}</b> {{ a.action.replace('_',' ') }} {{ a.entity }} <span class="mono">{{ a.entity_ref }}</span> <span class="muted">{{ a.detail }}</span></span></li>{% else %}<li class="empty">Nothing yet.</li>{% endfor %}</ul>
+    <p style="margin:8px 0 0"><a href="/admin/audit">Full audit log →</a></p></div>
+  <div class="card"><h2>From the 3D game</h2>
+    {% if live %}<p class="muted" style="margin-top:-4px">Last snapshot {{ live.updated_at|dt }}</p>{% endif %}
+    <ul class="feed">{% for e in d.recent_events %}<li><time>{{ e.at|dt }}</time><span><b>{{ e.event_type.replace('_',' ') }}</b> <span class="muted">{{ e.payload.get('ship') or e.payload.get('vehicle') or '' }} {{ e.payload.get('port','') }}</span></span></li>{% else %}<li class="empty">No game events yet. Open the game from this server to stream port activity here.</li>{% endfor %}</ul>
+    <p style="margin:8px 0 0"><a href="/admin/live">Live view →</a></p></div>
+</div>
+{% endblock %}

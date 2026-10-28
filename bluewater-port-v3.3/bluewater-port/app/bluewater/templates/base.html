@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Bluewater Port{% endblock %} · Bluewater Port Authority</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/admin.css">
+{% block extrahead %}{% endblock %}
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Main">
+    <div class="brand"><b>Bluewater <span>Port</span></b><small>Archipelago port authority · v{{ VERSION }}</small></div>
+    {% set nav = [
+      ("Operations", [("/admin","Dashboard"),("/admin/live","Live from game"),("/admin/gate","Gate in / out"),("/admin/customs","Customs")]),
+      ("Companies", [("/admin/companies","Registered companies"),("/admin/transit","Transit requests"),("/admin/insurance","Insurance claims")]),
+      ("Logistics", [("/admin/orders","Supply orders"),("/admin/warehouses","Warehouses"),("/admin/containers","Containers"),("/admin/vessels","Vessel calls")]),
+      ("Registry", [("/admin/ships","Ships"),("/admin/industries","Industries"),("/admin/vehicles","Vehicles")]),
+      ("System", [("/portal/login","Company portal ↗"),("/admin/audit","Audit log"),("/admin/users","Users & roles"),("/docs","REST API docs"),("/game","Open 3D game")]),
+    ] %}
+    {% for group, links in nav %}
+      <h6>{{ group }}</h6>
+      {% for href, label in links %}
+        {% set on = (path == href) or (href != '/admin' and path.startswith(href ~ '/')) %}<a href="{{ href }}" class="{{ 'on' if on }}" {% if href in ['/game','/docs'] %}target="_blank" rel="noopener"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    {% endfor %}
+    {% if user %}<div class="who"><b>{{ user.full_name or user.username }}</b>{{ user.role|capitalize }} · <a href="/admin/logout" style="color:inherit;text-decoration:underline">Sign out</a></div>{% endif %}
+  </nav>
+  <main>
+    {% for f in flashes %}<div class="flash {{ f.kind }}" role="status">{{ f.msg }}</div>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

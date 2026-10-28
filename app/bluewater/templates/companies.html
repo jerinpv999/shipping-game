@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "_macros.html" import badge, status_form %}
+{% block title %}Companies{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Company portal</span><h1>Registered companies</h1><p>Shipping lines and hauliers that signed up through the portal. Approve them before they can accept transit requests. Their purchased ships and vehicles appear in the registry as pending.</p></div><a class="btn ghost" href="/portal/register" target="_blank" rel="noopener">Open registration page</a></div>
+<div class="tablewrap"><table><thead><tr><th>Reg. no.</th><th>Company</th><th>Type</th><th>Contact</th><th class="num">Balance</th><th class="num">Fleet</th><th class="num">Jobs done</th><th>Status</th><th></th></tr></thead><tbody>
+{% for c in companies %}<tr>
+<td class="mono">{{ c.reg_no }}</td><td><a href="/admin/companies/{{ c.id }}"><b>{{ c.name }}</b></a><div class="muted" style="font-size:12px">{{ c.country }} · since {{ c.created_at|dt }}</div></td>
+<td>{{ {'both':'Ships + road','shipping_line':'Shipping line','haulier':'Haulier'}[c.company_type] }}</td><td>{{ c.contact_email }}<div class="muted" style="font-size:12px">{{ c.phone }}</div></td>
+<td class="num">{{ c.balance|money }}</td><td class="num">{{ c.ships|length }} ship{{ 's' if c.ships|length != 1 }} · {{ c.vehicles|length }} vehicle{{ 's' if c.vehicles|length != 1 }}</td><td class="num">{{ jobs.get(c.id,0) }}</td>
+<td>{{ badge(c.status) }}</td><td>{% if can(user,'companies') %}{{ status_form('/admin/companies/%d/status'|format(c.id), c.status, ['pending','approved','suspended']) }}{% endif %}</td></tr>
+{% else %}<tr><td colspan="9" class="empty">No companies have registered yet.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Vessel calls{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Logistics</span><h1>Vessel calls</h1><p>Every berthing and departure, from the admin panel or reported by the 3D game.</p></div><a class="btn ghost" href="/admin/ships">Berth or depart a ship</a></div>
+<div class="tablewrap"><table>
+<thead><tr><th>Vessel</th><th>Terminal</th><th>Status</th><th>Operation</th><th class="num">Quantity</th><th>Arrived</th><th>Departed</th><th>Source</th></tr></thead>
+<tbody>{% for c in calls %}<tr>
+<td><b>{{ c.ship.name }}</b></td><td>{{ c.port.name }}</td><td>{{ badge(c.status) }}</td><td>{{ c.operation|capitalize or '—' }}</td>
+<td class="num">{{ c.quantity|num if c.quantity else '—' }} {% if c.quantity %}{{ c.ship.capacity_unit if c.ship.ship_type != 'container' else 'boxes' }}{% endif %}</td>
+<td>{{ c.arrived_at|dt }}</td><td>{{ c.departed_at|dt }}</td><td>{{ badge(c.source, c.source|capitalize) }}</td></tr>
+{% else %}<tr><td colspan="8" class="empty">No vessel calls yet.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "portal_base.html" %}{% from "_macros.html" import badge %}
+{% block title %}Crew{% endblock %}
+{% block content %}
+<div class="head"><div><span class="eyebrow">Crew</span><h1>Captains and officers</h1><p>Hire seafarers who apply, or create logins for your own people. Assign each captain a ship; they sail it in the 3D game. As the owner you can sail any of your ships yourself.</p></div><a class="btn" href="/game">Sail in 3D</a></div>
+<div class="card" style="margin-bottom:14px"><h2>Crew</h2>
+<div class="tablewrap"><table><thead><tr><th>Name</th><th>Login</th><th>Position</th><th>Certificate</th><th>Assigned ship</th><th></th></tr></thead><tbody>
+{% for m in members %}<tr><td><b>{{ m.user.full_name }}</b><div class="muted" style="font-size:12px">joined {{ m.joined_at|dt }}</div></td><td class="mono">{{ m.user.username }}</td><td>{{ POSITIONS.get(m.position, m.position) }}</td><td>{{ m.user.licence }}</td>
+<td><form class="inline" method="post" action="/portal/crew/{{ m.id }}/assign"><select name="ship_id" aria-label="Assign ship to {{ m.user.full_name }}"><option value="">Not assigned</option>{% for s in ships %}<option value="{{ s.id }}" {{ 'selected' if m.ship_id == s.id }}>{{ s.name }}{% if s.status != 'approved' %} ({{ s.status }}){% endif %}</option>{% endfor %}</select><button class="small ghost">Save</button></form></td>
+<td><form class="inline" method="post" action="/portal/crew/{{ m.id }}/remove"><button class="small ghost">Remove</button></form></td></tr>
+{% else %}<tr><td colspan="6" class="empty">No crew yet. Hire an applicant or add staff below.</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="grid g2">
+<div class="card"><h2>Applications</h2>
+{% for a in apps %}<div style="padding:10px 0;border-top:1px solid var(--line)">
+  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>{{ a.user.full_name }}</b>{{ badge('approved' if a.status=='accepted' else a.status, a.status|capitalize) }}</div>
+  <div class="muted" style="font-size:13px">{{ POSITIONS.get(a.position, a.position) }} · {{ a.user.licence }} · {{ a.user.experience_years }} years at sea · applied {{ a.created_at|dt }}</div>
+  {% if a.status == 'pending' and employers.get(a.user_id) %}<div style="font-size:13px;margin-top:2px">Transfer · currently with <b>{{ employers[a.user_id] }}</b>. Hiring ends that contract.</div>{% endif %}
+  {% if a.message %}<p style="margin:4px 0">“{{ a.message }}”</p>{% endif %}
+  {% if a.status == 'pending' %}<form class="inline" method="post" action="/portal/crew/applications/{{ a.id }}"><button name="decision" value="accept" class="small ok">Hire</button> <button name="decision" value="reject" class="small ghost">Decline</button></form>{% endif %}
+</div>{% else %}<p class="empty">No applications yet. Seafarers apply from their own page.</p>{% endfor %}
+</div>
+{% if former %}<div class="card" style="margin-top:14px"><h2>Former crew</h2>
+{% for m in former %}<div style="padding:8px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px"><span><b>{{ m.user.full_name }}</b> <span class="muted">· {{ POSITIONS.get(m.position, m.position) }}</span></span><span class="muted" style="font-size:13px">{{ m.left_reason }}</span></div>{% endfor %}
+</div>{% endif %}
+<form class="card stack" method="post" action="/portal/crew/add"><h2>Add staff</h2>
+  <p class="muted" style="margin:0">Creates a seafarer login for one of your own people.</p>
+  <div class="form">
+    <label for="full_name">Name<input id="full_name" name="full_name" required></label>
+    <label for="position">Position<select id="position" name="position">{% for k, v in POSITIONS.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label for="licence">Certificate<select id="licence" name="licence">{% for l in LICENCES %}<option>{{ l }}</option>{% endfor %}</select></label>
+    <label for="ship_id">Assign ship<select id="ship_id" name="ship_id"><option value="">Later</option>{% for s in ships %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></label>
+    <label for="username">Login username<input id="username" name="username" minlength="3" required></label>
+    <label for="password">Password (8+)<input id="password" name="password" type="password" minlength="8" required></label>
+  </div>
+  <button>Add to crew</button>
+</form>
+</div>
+{% endblock %}
